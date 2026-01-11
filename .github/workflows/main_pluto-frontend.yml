@@ -25,6 +25,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          ls -la
           npm ci
 
       - name: Build React app
