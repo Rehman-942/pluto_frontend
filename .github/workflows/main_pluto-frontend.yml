@@ -36,6 +36,7 @@ jobs:
             build
             server.js
             package.json
+            package-lock.json
             .deployment
 
   deploy:
