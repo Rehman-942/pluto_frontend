@@ -34,7 +34,7 @@ jobs:
           name: react-app
           path: |
             build
-            app.js
+            static-server.js
             package.json
             package-lock.json
 

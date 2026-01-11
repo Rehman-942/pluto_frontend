@@ -30,7 +30,7 @@
     "express": "^4.18.2"
   },
   "scripts": {
-    "start": "node app.js",
+    "start": "node static-server.js",
     "dev": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
