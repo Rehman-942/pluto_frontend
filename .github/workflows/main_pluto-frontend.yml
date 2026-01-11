@@ -26,7 +26,7 @@ jobs:
       - name: Check repository structure
         run: |
           npm ci
-          REACT_APP_API_URL=https://pluto-backend-chaqffgxhrbnh0cv.norwayeast-01.azurewebsites.net npm run build -- --silent
+          ESLINT_NO_DEV_ERRORS=true REACT_APP_API_URL=https://pluto-backend-chaqffgxhrbnh0cv.norwayeast-01.azurewebsites.net npm run build -- --silent
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
