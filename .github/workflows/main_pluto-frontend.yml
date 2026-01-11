@@ -23,17 +23,9 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: Install dependencies
+      - name: Check repository structure
         run: |
-          pwd
-          ls -la
-          ls -la public/ || echo "public directory not found"
           npm ci
-
-      - name: Build React app
-        run: |
-          pwd
-          ls -la public/
           REACT_APP_API_URL=https://pluto-backend-chaqffgxhrbnh0cv.norwayeast-01.azurewebsites.net npm run build
 
       - name: Upload artifact for deployment job

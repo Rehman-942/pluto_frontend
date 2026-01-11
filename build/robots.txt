@@ -1,0 +1,24 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://pluto.com/sitemap.xml
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Allow all search engines to crawl public pages
+Allow: /
+Allow: /explore
+Allow: /search
+Allow: /photo/*
+Allow: /user/*
+
+# Disallow private/admin areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /profile/edit
+Disallow: /upload
+Disallow: /login
+Disallow: /register
