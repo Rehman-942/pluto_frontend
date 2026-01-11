@@ -5,28 +5,28 @@ export const apiConfig = {
   // Base URL for API calls
   baseUrl: API_BASE_URL,
   
-  // API endpoints
+  // API endpoints (with /api prefix)
   endpoints: {
     auth: {
-      login: '/auth/login',
-      register: '/auth/register',
-      refresh: '/auth/refresh',
-      logout: '/auth/logout'
+      login: '/api/auth/login',
+      register: '/api/auth/register',
+      refresh: '/api/auth/refresh',
+      logout: '/api/auth/logout'
     },
     users: {
-      profile: '/users/profile',
-      update: '/users/update'
+      profile: '/api/users/profile',
+      update: '/api/users/update'
     },
     videos: {
-      upload: '/videos/upload',
-      list: '/videos',
-      like: '/videos/like',
-      comment: '/videos/comment',
-      delete: '/videos/delete'
+      upload: '/api/videos/upload',
+      list: '/api/videos',
+      like: '/api/videos/like',
+      comment: '/api/videos/comment',
+      delete: '/api/videos/delete'
     },
     comments: {
-      add: '/comments',
-      delete: '/comments/delete'
+      add: '/api/comments',
+      delete: '/api/comments/delete'
     }
   },
   
