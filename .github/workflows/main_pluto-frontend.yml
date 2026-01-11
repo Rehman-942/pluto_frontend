@@ -38,6 +38,7 @@ jobs:
             package.json
             package-lock.json
             .deployment
+            startup.sh
 
   deploy:
     runs-on: ubuntu-latest
