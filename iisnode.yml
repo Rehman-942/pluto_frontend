@@ -1,0 +1,8 @@
+node_env: production
+nodeProcessCount: 1
+maxConcurrentRequestsPerProcess: 1024
+maxNamedPipeConnectionRetry: 3
+namedPipeConnectionRetryDelay: 2000
+maxNamedPipeConnectionPoolSize: 512
+maxNamedPipePooledConnectionAge: 30000
+initialApplicationMemorySize: 512
