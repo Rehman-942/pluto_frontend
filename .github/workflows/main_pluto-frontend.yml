@@ -34,11 +34,9 @@ jobs:
           name: react-app
           path: |
             build
-            server.js
+            app.js
             package.json
             package-lock.json
-            .deployment
-            startup.sh
 
   deploy:
     runs-on: ubuntu-latest
