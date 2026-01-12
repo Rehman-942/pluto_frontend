@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { authService } from '../services/auth';
 import toast from 'react-hot-toast';
 
@@ -115,23 +115,42 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       
       const token = localStorage.getItem('accessToken');
+      console.log('LoadUser - Token found:', !!token);
+      
       if (!token) {
+        console.log('LoadUser - No token, setting loading false');
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
         return;
       }
 
       // Verify token with server
+      console.log('LoadUser - Verifying token with server...');
       const response = await authService.getCurrentUser();
+      console.log('LoadUser - Server response:', response.data);
+      
       dispatch({ 
         type: AUTH_ACTIONS.LOAD_USER, 
         payload: response.data.user 
       });
+      console.log('LoadUser - User loaded successfully:', response.data.user?.email);
     } catch (error) {
       console.error('Load user error:', error);
-      // Remove invalid token
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      console.error('Error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // Only clear tokens if it's actually an auth error (401)
+      if (error.response?.status === 401) {
+        console.log('LoadUser - 401 error, clearing tokens');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      }
+      
       dispatch({ type: AUTH_ACTIONS.LOAD_USER, payload: null });
+    } finally {
+      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
     }
   };
 
@@ -141,7 +160,7 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.LOGIN_START });
       
       const response = await authService.login(credentials);
-      const { user, tokens } = response.data;
+      const { user, tokens } = response.data.data;
 
       // Store tokens
       localStorage.setItem('accessToken', tokens.accessToken);
@@ -156,6 +175,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Login failed';
+      
       dispatch({ 
         type: AUTH_ACTIONS.LOGIN_ERROR, 
         payload: errorMessage 
@@ -171,7 +191,7 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: AUTH_ACTIONS.REGISTER_START });
       
       const response = await authService.register(userData);
-      const { user, tokens } = response.data;
+      const { user, tokens } = response.data.data;
 
       // Store tokens
       localStorage.setItem('accessToken', tokens.accessToken);
@@ -219,9 +239,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Clear error function
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-  };
+  }, []);
 
   // Check if user has required role
   const hasRole = (requiredRole) => {

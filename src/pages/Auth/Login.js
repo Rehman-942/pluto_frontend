@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
@@ -20,7 +20,6 @@ const Login = () => {
   const { login, isAuthenticated, error, clearError, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -43,11 +42,19 @@ const Login = () => {
     clearError();
   }, [clearError]);
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data, event) => {
+    event?.preventDefault();
     try {
       const result = await login(data);
+      
       if (result.success) {
         navigate(from, { replace: true });
+      } else {
+        // Handle login failure
+        setError('submit', {
+          type: 'manual',
+          message: result.error || 'Login failed',
+        });
       }
     } catch (err) {
       setError('submit', {
@@ -149,12 +156,13 @@ const Login = () => {
               />
 
               <Button
-                type="submit"
+                type="button"
                 fullWidth
                 variant="contained"
                 sx={{ mt: 3, mb: 2, py: 1.5 }}
                 disabled={isLoading}
                 startIcon={isLoading ? <CircularProgress size={20} /> : null}
+                onClick={handleSubmit(onSubmit)}
               >
                 {isLoading ? 'Signing In...' : 'Sign In'}
               </Button>

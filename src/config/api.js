@@ -1,5 +1,5 @@
 // API Configuration for Pluto Frontend
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://plutoapi.rehman.fun';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export const apiConfig = {
   // Base URL for API calls

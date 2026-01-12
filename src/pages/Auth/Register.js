@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -53,11 +53,19 @@ const Register = () => {
     clearError();
   }, [clearError]);
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data, event) => {
+    event?.preventDefault();
     try {
-      const result = await registerUser(data);
+      const { confirmPassword, ...userData } = data;
+      const result = await registerUser(userData);
       if (result.success) {
         navigate('/', { replace: true });
+      } else {
+        // Handle registration failure
+        setError('submit', {
+          type: 'manual',
+          message: result.error || 'Registration failed',
+        });
       }
     } catch (err) {
       setError('submit', {
@@ -309,12 +317,13 @@ const Register = () => {
               </Box>
 
               <Button
-                type="submit"
+                type="button"
                 fullWidth
                 variant="contained"
                 sx={{ mt: 2, mb: 2, py: 1.5 }}
                 disabled={isLoading}
                 startIcon={isLoading ? <CircularProgress size={20} /> : <PersonAdd />}
+                onClick={handleSubmit(onSubmit)}
               >
                 {isLoading ? 'Creating Account...' : 'Create Account'}
               </Button>

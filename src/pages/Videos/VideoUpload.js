@@ -37,7 +37,7 @@ import { useDropzone } from 'react-dropzone';
 import { useForm, Controller } from 'react-hook-form';
 import { useMutation } from 'react-query';
 import { Helmet } from 'react-helmet-async';
-import { videoService } from '../../services/videos';
+import { proxyUploadService } from '../../services/proxyUpload';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -72,9 +72,25 @@ const VideoUpload = () => {
     },
   });
 
-  // Upload mutation
+  // Upload mutation using proxy upload service
   const uploadMutation = useMutation(
-    (videoData) => videoService.uploadVideo(videoData, setUploadProgress),
+    async (uploadData) => {
+      const { file, videoData } = uploadData;
+      
+      console.log('Starting proxy video upload...');
+      
+      // Use proxy upload service to avoid CORS issues
+      const result = await proxyUploadService.uploadVideo(
+        file,
+        videoData,
+        (progress) => {
+          console.log('Upload progress:', progress);
+          setUploadProgress(progress);
+        }
+      );
+      
+      return result;
+    },
     {
       onSuccess: (response) => {
         setIsProcessing(false);
@@ -83,7 +99,8 @@ const VideoUpload = () => {
       },
       onError: (error) => {
         setIsProcessing(false);
-        toast.error(error.response?.data?.error || 'Failed to upload video');
+        console.error('Upload error:', error);
+        toast.error(error.message || 'Failed to upload video');
       },
     }
   );
@@ -96,8 +113,13 @@ const VideoUpload = () => {
     maxSize: 500 * 1024 * 1024, // 500MB
     multiple: false,
     onDrop: (acceptedFiles, rejectedFiles) => {
+      console.log('=== FILE DROP EVENT ===');
+      console.log('Accepted files:', acceptedFiles);
+      console.log('Rejected files:', rejectedFiles);
+      
       if (rejectedFiles.length > 0) {
         const error = rejectedFiles[0].errors[0];
+        console.log('File rejection error:', error);
         if (error.code === 'file-too-large') {
           toast.error('File size must be less than 500MB');
         } else if (error.code === 'file-invalid-type') {
@@ -109,21 +131,34 @@ const VideoUpload = () => {
       }
 
       const file = acceptedFiles[0];
+      console.log('Selected file:', file);
       if (file) {
         setSelectedFile(file);
         
         // Create video preview
         const videoUrl = URL.createObjectURL(file);
         setVideoPreview(videoUrl);
+        console.log('Video preview URL created:', videoUrl);
         
         // Set default title from filename
         const defaultTitle = file.name.replace(/\.[^/.]+$/, "");
         setValue('title', defaultTitle);
+        console.log('Default title set:', defaultTitle);
         
         // Move to next step
         setCurrentStep(1);
+        console.log('Moved to step 1');
       }
     },
+    onDropAccepted: (files) => {
+      console.log('Files accepted:', files);
+    },
+    onDropRejected: (files) => {
+      console.log('Files rejected:', files);
+    },
+    onClick: () => {
+      console.log('Dropzone clicked');
+    }
   });
 
   const handleAddTag = () => {
@@ -153,15 +188,17 @@ const VideoUpload = () => {
 
     setIsProcessing(true);
     
-    const videoData = {
+    const uploadData = {
       file: selectedFile,
-      title: data.title,
-      description: data.description,
-      visibility: data.visibility,
-      tags: tags,
+      videoData: {
+        title: data.title,
+        description: data.description,
+        visibility: data.visibility,
+        tags: tags,
+      }
     };
 
-    uploadMutation.mutate(videoData);
+    uploadMutation.mutate(uploadData);
   };
 
   const handleNext = () => {
@@ -231,7 +268,14 @@ const VideoUpload = () => {
                 or click to browse files
               </Typography>
               
-              <Button variant="outlined" size="large">
+              <Button 
+                variant="outlined" 
+                size="large"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+              >
                 Choose File
               </Button>
               
