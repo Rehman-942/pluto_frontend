@@ -18,7 +18,7 @@ import {
 import {
   Save,
   Cancel,
-  PhotoCamera,
+  CameraAlt,
   Delete,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
@@ -236,7 +236,7 @@ const EditProfile = () => {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Button
                   variant="outlined"
-                  startIcon={<PhotoCamera />}
+                  startIcon={<CameraAlt />}
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadAvatarMutation.isLoading}
                 >

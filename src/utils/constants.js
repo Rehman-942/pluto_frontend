@@ -114,7 +114,7 @@ export const CACHE_KEYS = {
   USER_PROFILE: 'userProfile',
   USER_PREFERENCES: 'userPreferences',
   SEARCH_HISTORY: 'searchHistory',
-  DRAFT_PHOTOS: 'draftPhotos',
+  DRAFT_VIDEOS: 'draftVideos',
   THEME_MODE: 'themeMode',
   LANGUAGE: 'language',
 };
@@ -141,7 +141,7 @@ export const VALIDATION_RULES = {
     REQUIRE_NUMBERS: false,
     REQUIRE_SYMBOLS: false,
   },
-  PHOTO: {
+  VIDEO: {
     TITLE: {
       MIN_LENGTH: 1,
       MAX_LENGTH: 200,

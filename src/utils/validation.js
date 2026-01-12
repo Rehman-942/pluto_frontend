@@ -55,36 +55,36 @@ export const validateName = (name, fieldName = 'Name') => {
   return { valid: true };
 };
 
-// Photo validation
-export const validatePhotoTitle = (title) => {
-  if (!title) return { valid: false, message: 'Photo title is required' };
+// Video validation
+export const validateVideoTitle = (title) => {
+  if (!title) return { valid: false, message: 'Video title is required' };
   
-  if (title.length < VALIDATION_RULES.PHOTO.TITLE.MIN_LENGTH) {
-    return { valid: false, message: 'Photo title cannot be empty' };
+  if (title.length < VALIDATION_RULES.VIDEO.TITLE.MIN_LENGTH) {
+    return { valid: false, message: 'Video title cannot be empty' };
   }
   
-  if (title.length > VALIDATION_RULES.PHOTO.TITLE.MAX_LENGTH) {
-    return { valid: false, message: `Photo title cannot exceed ${VALIDATION_RULES.PHOTO.TITLE.MAX_LENGTH} characters` };
+  if (title.length > VALIDATION_RULES.VIDEO.TITLE.MAX_LENGTH) {
+    return { valid: false, message: `Video title cannot exceed ${VALIDATION_RULES.VIDEO.TITLE.MAX_LENGTH} characters` };
   }
   
   return { valid: true };
 };
 
-export const validatePhotoDescription = (description) => {
+export const validateVideoDescription = (description) => {
   if (!description) return { valid: true }; // Optional field
   
-  if (description.length > VALIDATION_RULES.PHOTO.DESCRIPTION.MAX_LENGTH) {
-    return { valid: false, message: `Description cannot exceed ${VALIDATION_RULES.PHOTO.DESCRIPTION.MAX_LENGTH} characters` };
+  if (description.length > VALIDATION_RULES.VIDEO.DESCRIPTION.MAX_LENGTH) {
+    return { valid: false, message: `Description cannot exceed ${VALIDATION_RULES.VIDEO.DESCRIPTION.MAX_LENGTH} characters` };
   }
   
   return { valid: true };
 };
 
-export const validatePhotoTags = (tags) => {
+export const validateVideoTags = (tags) => {
   if (!Array.isArray(tags)) return { valid: false, message: 'Tags must be an array' };
   
-  if (tags.length > VALIDATION_RULES.PHOTO.TAGS.MAX_COUNT) {
-    return { valid: false, message: `Cannot have more than ${VALIDATION_RULES.PHOTO.TAGS.MAX_COUNT} tags` };
+  if (tags.length > VALIDATION_RULES.VIDEO.TAGS.MAX_COUNT) {
+    return { valid: false, message: `Cannot have more than ${VALIDATION_RULES.VIDEO.TAGS.MAX_COUNT} tags` };
   }
   
   for (const tag of tags) {
@@ -92,8 +92,8 @@ export const validatePhotoTags = (tags) => {
       return { valid: false, message: 'Tags cannot be empty' };
     }
     
-    if (tag.length > VALIDATION_RULES.PHOTO.TAGS.MAX_LENGTH) {
-      return { valid: false, message: `Tag "${tag}" is too long (max ${VALIDATION_RULES.PHOTO.TAGS.MAX_LENGTH} characters)` };
+    if (tag.length > VALIDATION_RULES.VIDEO.TAGS.MAX_LENGTH) {
+      return { valid: false, message: `Tag "${tag}" is too long (max ${VALIDATION_RULES.VIDEO.TAGS.MAX_LENGTH} characters)` };
     }
     
     if (!/^[a-zA-Z0-9_\s-]+$/.test(tag)) {
@@ -210,10 +210,10 @@ export const VALIDATION_SCHEMAS = {
     confirmPassword: [(confirmPassword, data) => validatePasswordConfirmation(data?.password, confirmPassword)]
   },
   
-  PHOTO_UPLOAD: {
-    title: [validatePhotoTitle],
-    description: [validatePhotoDescription],
-    tags: [validatePhotoTags]
+  VIDEO_UPLOAD: {
+    title: [validateVideoTitle],
+    description: [validateVideoDescription],
+    tags: [validateVideoTags]
   },
   
   PROFILE_UPDATE: {
@@ -234,9 +234,9 @@ export default {
   validatePassword,
   validatePasswordConfirmation,
   validateName,
-  validatePhotoTitle,
-  validatePhotoDescription,
-  validatePhotoTags,
+  validateVideoTitle,
+  validateVideoDescription,
+  validateVideoTags,
   validateComment,
   validateBio,
   validateUrl,

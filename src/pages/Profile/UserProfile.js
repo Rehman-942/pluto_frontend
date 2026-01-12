@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import {
   PersonAdd,
-  PhotoCamera,
+  VideoLibrary,
   Favorite,
   Visibility,
   LocationOn,
@@ -56,10 +56,10 @@ const UserProfile = () => {
 
   const user = usersData?.data?.users?.[0];
 
-  // Fetch user's photos (only public photos for other users)
-  const { data: photosData, isLoading: photosLoading } = useQuery(
-    ['photos', 'user', user?._id],
-    () => videoService.getUserVideos(user?._id, { visibility: 'public' }),
+  // Fetch user's videos (only public videos for other users)
+  const { data: videosData, isLoading: videosLoading } = useQuery(
+    ['videos', 'user', user?._id],
+    () => videoService.getUserVideos(user._id, { limit: 20, visibility: 'public' }),
     {
       enabled: !!user?._id,
     }
@@ -67,14 +67,14 @@ const UserProfile = () => {
 
   // Fetch user stats
   const { data: statsData, isLoading: statsLoading } = useQuery(
-    ['userStats', user?._id],
+    ['user-videos', user?._id],
     () => userService.getUserStats(user?._id),
     {
       enabled: !!user?._id,
     }
   );
 
-  const photos = photosData?.data.photos || [];
+  const videos = videosData?.data.videos || [];
   const stats = statsData?.data.stats || user?.stats || {};
 
   const handleTabChange = (event, newValue) => {
@@ -160,7 +160,7 @@ const UserProfile = () => {
     return null;
   }
 
-  const PhotoCard = ({ photo }) => (
+  const VideoCard = ({ video }) => (
     <Card 
       sx={{ 
         cursor: 'pointer',
@@ -170,37 +170,37 @@ const UserProfile = () => {
           boxShadow: theme => theme.shadows[4],
         }
       }}
-      onClick={() => navigate(`/photo/${photo._id}`)}
+      onClick={() => navigate(`/video/${video._id}`)}
     >
       <CardMedia
         component="img"
         height="200"
-        image={photo.images?.medium?.url || photo.images?.original?.url}
-        alt={photo.title}
+        image={video.video?.original?.url || video.thumbnails?.[0]?.url}
+        alt={video.title}
         sx={{ objectFit: 'cover' }}
       />
       <CardContent sx={{ pb: 2 }}>
         <Typography variant="subtitle2" fontWeight={600} noWrap>
-          {photo.title}
+          {video.title}
         </Typography>
         
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Favorite color="action" fontSize="small" />
-            <Typography variant="caption">{photo.stats?.likesCount || 0}</Typography>
+            <Typography variant="caption">{video.stats?.likesCount || 0}</Typography>
             <Visibility color="action" fontSize="small" />
-            <Typography variant="caption">{photo.stats?.viewsCount || 0}</Typography>
+            <Typography variant="caption">{video.stats?.viewsCount || 0}</Typography>
           </Box>
         </Box>
         
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          {format(new Date(photo.createdAt), 'MMM d, yyyy')}
+          {format(new Date(video.createdAt), 'MMM d, yyyy')}
         </Typography>
       </CardContent>
     </Card>
   );
 
-  const PhotoSkeleton = () => (
+  const VideoSkeleton = () => (
     <Card>
       <Skeleton variant="rectangular" height={200} />
       <CardContent>
@@ -214,7 +214,7 @@ const UserProfile = () => {
     <>
       <Helmet>
         <title>{user?.firstName} {user?.lastName} (@{user?.username}) - Pluto</title>
-        <meta name="description" content={user?.bio || `View ${user?.firstName} ${user?.lastName}'s photos on Pluto`} />
+        <meta name="description" content={user?.bio || `View ${user?.firstName} ${user?.lastName}'s videos on Pluto`} />
       </Helmet>
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -338,10 +338,10 @@ const UserProfile = () => {
             <Grid container spacing={4} sx={{ textAlign: 'center' }}>
               <Grid item xs={6} sm={3}>
                 <Typography variant="h4" fontWeight={700} color="primary.main">
-                  {statsLoading ? <Skeleton width={60} /> : (stats.photosCount || 0)}
+                  {statsLoading ? <Skeleton width={60} /> : (stats.videosCount || 0)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Photos
+                  Videos
                 </Typography>
               </Grid>
               
@@ -375,45 +375,45 @@ const UserProfile = () => {
           </CardContent>
         </Card>
 
-        {/* Photos Section */}
+        {/* Videos Section */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" fontWeight={600}>
-            {user?.firstName}'s Photos
+            {user?.firstName}'s Videos
           </Typography>
         </Box>
 
-        {/* Photo Tabs */}
+        {/* Video Tabs */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs value={tabValue} onChange={handleTabChange}>
-            <Tab label={`All Public Photos (${photos.length})`} />
+            <Tab label={`All Public Videos (${videos.length})`} />
           </Tabs>
         </Box>
 
-        {/* Photos Grid */}
-        {photosLoading ? (
+        {/* Videos Grid */}
+        {videosLoading ? (
           <Grid container spacing={3}>
             {[...Array(6)].map((_, index) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-                <PhotoSkeleton />
+                <VideoSkeleton />
               </Grid>
             ))}
           </Grid>
-        ) : photos.length > 0 ? (
+        ) : videos.length > 0 ? (
           <Grid container spacing={3}>
-            {photos.map((photo) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={photo._id}>
-                <PhotoCard photo={photo} />
+            {videos.map((video) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={video._id}>
+                <VideoCard video={video} />
               </Grid>
             ))}
           </Grid>
         ) : (
           <Box sx={{ textAlign: 'center', py: 8 }}>
-            <PhotoCamera sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <VideoLibrary sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h5" gutterBottom>
-              No public photos
+              No public videos
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              {user?.firstName} hasn't shared any public photos yet.
+              {user?.firstName} hasn't shared any public videos yet.
             </Typography>
           </Box>
         )}

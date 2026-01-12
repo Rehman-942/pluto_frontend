@@ -1,9 +1,9 @@
 import { apiService } from './api';
 
 export const commentService = {
-  // Get comments for a photo
-  getPhotoComments: async (photoId, params = {}) => {
-    const response = await apiService.get(`/comments/photo/${photoId}`, params, { useCache: true });
+  // Get comments for a video
+  getVideoComments: async (videoId, params = {}) => {
+    const response = await apiService.get(`/comments/video/${videoId}`, params, { useCache: true });
     return response;
   },
 
@@ -17,8 +17,8 @@ export const commentService = {
   createComment: async (commentData) => {
     const response = await apiService.post('/comments', commentData);
     
-    // Clear comments cache for the photo
-    apiService.clearCache(`/comments/photo/${commentData.photoId}`);
+    // Clear comments cache for the video
+    apiService.clearCache(`/comments/video/${commentData.videoId}`);
     if (commentData.parentId) {
       apiService.clearCache(`/comments/${commentData.parentId}/thread`);
     }

@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import {
   Search as SearchIcon,
-  PhotoCamera as PhotoCameraIcon,
+  Videocam as VideocamIcon,
   AccountCircle,
   Settings,
   Logout,
@@ -158,7 +158,7 @@ const Navbar = () => {
           to="/"
           sx={{ mr: 2 }}
         >
-          <PhotoCameraIcon />
+          <VideocamIcon />
         </IconButton>
         
         <Typography

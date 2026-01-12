@@ -39,8 +39,8 @@ const Search = () => {
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [activeTab, setActiveTab] = useState(0);
 
-  const { data: photosData, isLoading: photosLoading } = useQuery(
-    ['search', 'photos', query],
+  const { data: videosData, isLoading: videosLoading } = useQuery(
+    ['search', 'videos', query],
     () => videoService.searchVideos(query, { limit: 50 }),
     {
       enabled: !!query && activeTab === 0,
@@ -75,22 +75,22 @@ const Search = () => {
     setActiveTab(newValue);
   };
 
-  const handleLike = async (photoId) => {
+  const handleLike = async (videoId) => {
     if (!isAuthenticated) {
-      toast.error('Please log in to like photos');
+      toast.error('Please log in to like videos');
       navigate('/login');
       return;
     }
 
     try {
-      const response = await videoService.likeVideo(photoId);
+      const response = await videoService.likeVideo(videoId);
       // The query will refetch automatically due to React Query
     } catch (error) {
-      toast.error('Failed to like photo');
+      toast.error('Failed to like video');
     }
   };
 
-  const PhotoResultCard = ({ photo }) => (
+  const VideoResultCard = ({ video }) => (
     <Card 
       sx={{ 
         cursor: 'pointer',
@@ -100,21 +100,21 @@ const Search = () => {
           boxShadow: theme => theme.shadows[4],
         }
       }}
-      onClick={() => navigate(`/photo/${photo._id}`)}
+      onClick={() => navigate(`/video/${video._id}`)}
     >
       <CardMedia
         component="img"
         height="200"
-        image={photo.images?.medium?.url || photo.images?.original?.url}
-        alt={photo.title}
+        image={video.video?.original?.url || video.thumbnails?.[0]?.url}
+        alt={video.title}
         sx={{ objectFit: 'cover' }}
       />
       <CardContent>
         <Typography variant="subtitle1" fontWeight={600} noWrap>
-          {photo.title}
+          {video.title}
         </Typography>
         
-        {photo.description && (
+        {video.description && (
           <Typography 
             variant="body2" 
             color="text.secondary" 
@@ -126,20 +126,20 @@ const Search = () => {
               mt: 0.5
             }}
           >
-            {photo.description}
+            {video.description}
           </Typography>
         )}
 
         {/* Creator */}
         <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, mb: 1 }}>
           <Avatar 
-            src={photo.creatorId?.avatar?.url} 
+            src={video.creatorId?.avatar?.url} 
             sx={{ width: 24, height: 24, mr: 1 }}
           >
-            {photo.creatorId?.firstName?.[0]}
+            {video.creatorId?.firstName?.[0]}
           </Avatar>
           <Typography variant="caption">
-            {photo.creatorId?.firstName} {photo.creatorId?.lastName}
+            {video.creatorId?.firstName} {video.creatorId?.lastName}
           </Typography>
         </Box>
 
@@ -150,22 +150,22 @@ const Search = () => {
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                handleLike(photo._id);
+                handleLike(video._id);
               }}
-              color={photo.isLiked ? 'error' : 'default'}
+              color={video.isLiked ? 'error' : 'default'}
             >
-              {photo.isLiked ? <Favorite fontSize="small" /> : <FavoriteOutlined fontSize="small" />}
+              {video.isLiked ? <Favorite fontSize="small" /> : <FavoriteOutlined fontSize="small" />}
             </IconButton>
-            <Typography variant="caption">{photo.stats?.likesCount || 0}</Typography>
+            <Typography variant="caption">{video.stats?.likesCount || 0}</Typography>
             
             <Visibility fontSize="small" color="action" />
-            <Typography variant="caption">{photo.stats?.viewsCount || 0}</Typography>
+            <Typography variant="caption">{video.stats?.viewsCount || 0}</Typography>
           </Box>
 
           {/* Tags */}
-          {photo.tags && photo.tags.length > 0 && (
+          {video.tags && video.tags.length > 0 && (
             <Chip 
-              label={`#${photo.tags[0]}`} 
+              label={`#${video.tags[0]}`} 
               size="small" 
               variant="outlined"
             />
@@ -293,7 +293,7 @@ const Search = () => {
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
               <Tabs value={activeTab} onChange={handleTabChange}>
                 <Tab 
-                  label={`Photos ${photosData ? `(${photosData.data.photos?.length || 0})` : ''}`}
+                  label={`Videos ${videosData ? `(${videosData.data.videos?.length || 0})` : ''}`}
                   icon={<SearchIcon />}
                 />
                 <Tab 
@@ -306,7 +306,7 @@ const Search = () => {
             {/* Results */}
             {activeTab === 0 && (
               <>
-                {photosLoading ? (
+                {videosLoading ? (
                   <Grid container spacing={3}>
                     {[...Array(8)].map((_, index) => (
                       <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
@@ -314,11 +314,11 @@ const Search = () => {
                       </Grid>
                     ))}
                   </Grid>
-                ) : photosData?.data.photos?.length > 0 ? (
+                ) : videosData?.data.videos?.length > 0 ? (
                   <Grid container spacing={3}>
-                    {photosData.data.photos.map((photo) => (
-                      <Grid item xs={12} sm={6} md={4} lg={3} key={photo._id}>
-                        <PhotoResultCard photo={photo} />
+                    {videosData.data.videos.map((video) => (
+                      <Grid item xs={12} sm={6} md={4} lg={3} key={video._id}>
+                        <VideoResultCard video={video} />
                       </Grid>
                     ))}
                   </Grid>
@@ -326,7 +326,7 @@ const Search = () => {
                   <Box sx={{ textAlign: 'center', py: 8 }}>
                     <SearchIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                     <Typography variant="h5" gutterBottom>
-                      No photos found
+                      No videos found
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
                       Try searching with different keywords or tags

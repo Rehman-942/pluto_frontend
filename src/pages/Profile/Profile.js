@@ -20,7 +20,8 @@ import {
 import {
   Edit,
   Settings,
-  PhotoCamera,
+  PlayCircleOutline,
+  VideoLibrary,
   Favorite,
   Visibility,
 } from '@mui/icons-material';
@@ -275,15 +276,13 @@ const Profile = () => {
             My Videos
           </Typography>
           
-          {user.role === 'Creator' && (
-            <Button
-              variant="contained"
-              startIcon={<PhotoCamera />}
-              onClick={() => navigate('/upload')}
-            >
-              Upload Video
-            </Button>
-          )}
+          <Button
+            variant="contained"
+            startIcon={<PlayCircleOutline />}
+            onClick={() => navigate('/upload')}
+          >
+            Upload Video
+          </Button>
         </Box>
 
         {/* Video Tabs */}
@@ -314,7 +313,7 @@ const Profile = () => {
           </Grid>
         ) : (
           <Box sx={{ textAlign: 'center', py: 8 }}>
-            <PhotoCamera sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <VideoLibrary sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h5" gutterBottom>
               {tabValue === 0 ? 'No videos yet' : 
                tabValue === 1 ? 'No public videos' : 'No private videos'}
@@ -328,7 +327,7 @@ const Profile = () => {
             {user.role === 'Creator' ? (
               <Button
                 variant="contained"
-                startIcon={<PhotoCamera />}
+                startIcon={<PlayCircleOutline />}
                 onClick={() => navigate('/upload')}
               >
                 Upload Your First Video

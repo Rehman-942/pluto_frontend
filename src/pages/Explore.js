@@ -42,51 +42,44 @@ const Explore = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
-  const [photos, setPhotos] = useState([]);
+  const [videos, setVideos] = useState([]);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
     search: searchParams.get('q') || '',
     sortBy: searchParams.get('sortBy') || 'createdAt',
     sortOrder: searchParams.get('sortOrder') || 'desc',
-    tags: searchParams.get('tags')?.split(',').filter(Boolean) || [],
+    tags: searchParams.getAll('tags') || [],
   });
   const [viewMode, setViewMode] = useState('grid');
 
-  const { data: photosData, isLoading, refetch } = useQuery(
-    ['photos', 'explore', page, filters],
-    () => videoService.getVideos({
-      page,
-      limit: 20,
-      search: filters.search,
-      sortBy: filters.sortBy,
-      sortOrder: filters.sortOrder,
-      tags: filters.tags.join(','),
-    }),
+  const { data: searchResults, isLoading, refetch } = useQuery(
+    ['explore', 'videos', filters, page],
+    () => videoService.searchVideos({ ...filters, page, limit: 20 }),
     {
       keepPreviousData: true,
     }
   );
 
   useEffect(() => {
-    if (photosData?.data.photos) {
+    if (searchResults?.data.videos) {
       if (page === 1) {
-        setPhotos(photosData.data.photos);
+        setVideos(searchResults.data.videos);
       } else {
-        setPhotos(prev => [...prev, ...photosData.data.photos]);
+        setVideos(prev => [...prev, ...searchResults.data.videos]);
       }
-      setHasMore(photosData.data.pagination.hasMore);
+      setHasMore(searchResults.data.pagination.hasMore);
     }
-  }, [photosData, page]);
+  }, [searchResults, page]);
 
   useEffect(() => {
     // Reset pagination when filters change
     setPage(1);
-    setPhotos([]);
+    setVideos([]);
     setHasMore(true);
   }, [filters]);
 
-  const loadMorePhotos = () => {
+  const loadMoreVideos = () => {
     setPage(prev => prev + 1);
   };
 
@@ -119,37 +112,37 @@ const Explore = () => {
     setSearchParams(params);
   };
 
-  const handleLike = async (photoId) => {
+  const handleLike = async (videoId) => {
     if (!isAuthenticated) {
-      toast.error('Please log in to like photos');
+      toast.error('Please log in to like videos');
       navigate('/login');
       return;
     }
 
     try {
-      const response = await videoService.likePhoto(photoId);
+      const response = await videoService.likeVideo(videoId);
       
-      setPhotos(prev => prev.map(photo => {
-        if (photo._id === photoId) {
+      setVideos(prev => prev.map(video => {
+        if (video._id === videoId) {
           return {
-            ...photo,
-            isLiked: !photo.isLiked,
+            ...video,
+            isLiked: !video.isLiked,
             stats: {
-              ...photo.stats,
-              likesCount: photo.isLiked 
-                ? photo.stats.likesCount - 1 
-                : photo.stats.likesCount + 1
+              ...video.stats,
+              likesCount: video.isLiked 
+                ? video.stats.likesCount - 1 
+                : video.stats.likesCount + 1
             }
           };
         }
-        return photo;
+        return video;
       }));
     } catch (error) {
-      toast.error('Failed to like photo');
+      toast.error('Failed to like video');
     }
   };
 
-  const PhotoCard = ({ photo, isListView = false }) => (
+  const VideoCard = ({ video, isListView = false }) => (
     <Card 
       sx={{ 
         height: '100%',
@@ -165,13 +158,13 @@ const Explore = () => {
           height: 'auto',
         })
       }}
-      onClick={() => navigate(`/photo/${photo._id}`)}
+      onClick={() => navigate(`/video/${video._id}`)}
     >
       <CardMedia
         component="img"
         height={isListView ? "200" : "250"}
-        image={photo.images?.medium?.url || photo.images?.original?.url}
-        alt={photo.title}
+        image={video.video?.original?.url || video.thumbnails?.[0]?.url}
+        alt={video.title}
         sx={{ 
           objectFit: 'cover',
           ...(isListView && { 
@@ -182,10 +175,10 @@ const Explore = () => {
       />
       <CardContent sx={{ flexGrow: 1 }}>
         <Typography variant="h6" fontWeight={600} noWrap>
-          {photo.title}
+          {video.title}
         </Typography>
         
-        {photo.description && (
+        {video.description && (
           <Typography 
             variant="body2" 
             color="text.secondary" 
@@ -197,14 +190,14 @@ const Explore = () => {
               mt: 1
             }}
           >
-            {photo.description}
+            {video.description}
           </Typography>
         )}
 
         {/* Tags */}
-        {photo.tags && photo.tags.length > 0 && (
+        {video.tags && video.tags.length > 0 && (
           <Box sx={{ mt: 2, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-            {photo.tags.slice(0, isListView ? 5 : 3).map((tag, index) => (
+            {video.tags.slice(0, isListView ? 5 : 3).map((tag, index) => (
               <Chip 
                 key={index} 
                 label={`#${tag}`} 
@@ -224,17 +217,17 @@ const Explore = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Avatar 
-              src={photo.creatorId?.avatar?.url} 
+              src={video.creatorId?.avatar?.url} 
               sx={{ width: 32, height: 32, mr: 1 }}
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/user/${photo.creatorId?.username}`);
+                navigate(`/user/${video.creatorId?.username}`);
               }}
             >
-              {photo.creatorId?.firstName?.[0]}
+              {video.creatorId?.firstName?.[0]}
             </Avatar>
             <Typography variant="body2" fontWeight={500}>
-              {photo.creatorId?.firstName} {photo.creatorId?.lastName}
+              {video.creatorId?.firstName} {video.creatorId?.lastName}
             </Typography>
           </Box>
 
@@ -243,26 +236,26 @@ const Explore = () => {
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                handleLike(photo._id);
+                handleLike(video._id);
               }}
-              color={photo.isLiked ? 'error' : 'default'}
+              color={video.isLiked ? 'error' : 'default'}
             >
-              {photo.isLiked ? <Favorite /> : <FavoriteOutlined />}
+              {video.isLiked ? <Favorite /> : <FavoriteOutlined />}
             </IconButton>
-            <Typography variant="caption">{photo.stats?.likesCount || 0}</Typography>
+            <Typography variant="caption">{video.stats?.likesCount || 0}</Typography>
             
             <Visibility fontSize="small" color="action" />
-            <Typography variant="caption">{photo.stats?.viewsCount || 0}</Typography>
+            <Typography variant="caption">{video.stats?.viewsCount || 0}</Typography>
             
             <Comment fontSize="small" color="action" />
-            <Typography variant="caption">{photo.stats?.commentsCount || 0}</Typography>
+            <Typography variant="caption">{video.stats?.commentsCount || 0}</Typography>
           </Box>
         </Box>
       </CardContent>
     </Card>
   );
 
-  const PhotoSkeleton = ({ isListView = false }) => (
+  const VideoSkeleton = ({ isListView = false }) => (
     <Card sx={{ ...(isListView && { display: 'flex', height: 200 }) }}>
       <Skeleton variant="rectangular" height={isListView ? 200 : 250} width={isListView ? 300 : '100%'} />
       <CardContent sx={{ flexGrow: 1 }}>
@@ -276,18 +269,18 @@ const Explore = () => {
   return (
     <>
       <Helmet>
-        <title>Explore Photos - Pluto</title>
-        <meta name="description" content="Explore and discover amazing photos from our community" />
+        <title>Pluto - Explore Videos</title>
+        <meta name="description" content="Discover amazing videos from the Pluto community" />
       </Helmet>
 
       <Container maxWidth="lg">
         {/* Header */}
         <Box sx={{ py: 4 }}>
           <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
-            Explore Photos
+            Explore Videos
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Discover amazing photos from our creative community
+            Discover amazing videos from our creative community
           </Typography>
         </Box>
 
@@ -378,16 +371,16 @@ const Explore = () => {
           )}
         </Box>
 
-        {/* Photos */}
+        {/* Videos */}
         <InfiniteScroll
-          dataLength={photos.length}
-          next={loadMorePhotos}
+          dataLength={videos.length}
+          next={loadMoreVideos}
           hasMore={hasMore}
           loader={
             <Grid container spacing={3} sx={{ mt: 1 }}>
               {[...Array(6)].map((_, index) => (
                 <Grid item xs={12} sm={viewMode === 'list' ? 12 : 6} md={viewMode === 'list' ? 12 : 4} key={index}>
-                  <PhotoSkeleton isListView={viewMode === 'list'} />
+                  <VideoSkeleton isListView={viewMode === 'list'} />
                 </Grid>
               ))}
             </Grid>
@@ -398,43 +391,43 @@ const Explore = () => {
               color="text.secondary" 
               sx={{ textAlign: 'center', mt: 4, mb: 2 }}
             >
-              You've seen all photos! 📸
+              You've seen all videos! 🎥
             </Typography>
           }
         >
           <Grid container spacing={3}>
-            {photos.map((photo) => (
+            {videos.map((video) => (
               <Grid 
                 item 
                 xs={12} 
                 sm={viewMode === 'list' ? 12 : 6} 
                 md={viewMode === 'list' ? 12 : 4} 
                 lg={viewMode === 'list' ? 12 : 3} 
-                key={photo._id}
+                key={video._id}
               >
-                <PhotoCard photo={photo} isListView={viewMode === 'list'} />
+                <VideoCard video={video} isListView={viewMode === 'list'} />
               </Grid>
             ))}
           </Grid>
         </InfiniteScroll>
 
         {/* Loading State */}
-        {isLoading && photos.length === 0 && (
+        {isLoading && videos.length === 0 && (
           <Grid container spacing={3}>
             {[...Array(12)].map((_, index) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-                <PhotoSkeleton />
+                <VideoSkeleton />
               </Grid>
             ))}
           </Grid>
         )}
 
         {/* Empty State */}
-        {!isLoading && photos.length === 0 && (
+        {!isLoading && videos.length === 0 && (
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <SearchIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h5" gutterBottom>
-              No photos found
+              No videos found
             </Typography>
             <Typography variant="body1" color="text.secondary">
               Try adjusting your search criteria or explore different tags
@@ -442,16 +435,14 @@ const Explore = () => {
           </Box>
         )}
 
-        {/* Upload FAB for Creators */}
-        {user?.role === 'Creator' && (
-          <Fab
-            color="primary"
-            sx={{ position: 'fixed', bottom: 24, right: 24 }}
-            onClick={() => navigate('/upload')}
-          >
-            <Add />
-          </Fab>
-        )}
+        {/* Upload FAB */}
+        <Fab
+          color="primary"
+          sx={{ position: 'fixed', bottom: 24, right: 24 }}
+          onClick={() => navigate('/upload')}
+        >
+          <Add />
+        </Fab>
       </Container>
     </>
   );

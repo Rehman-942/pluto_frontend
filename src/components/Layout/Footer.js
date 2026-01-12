@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Container, Typography, Link, Grid, Divider } from '@mui/material';
-import { PhotoCamera, GitHub, LinkedIn, Twitter } from '@mui/icons-material';
+import { Videocam, GitHub, LinkedIn, Twitter } from '@mui/icons-material';
 
 const Footer = () => {
   return (
@@ -18,13 +18,13 @@ const Footer = () => {
           {/* Brand Section */}
           <Grid item xs={12} md={4}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <PhotoCamera sx={{ mr: 1 }} />
+              <Videocam sx={{ mr: 1 }} />
               <Typography variant="h6" component="div" fontWeight={700}>
                 Pluto
               </Typography>
             </Box>
             <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
-              A modern photo sharing platform built with MERN stack, featuring 
+              A modern video sharing platform built with MERN stack, featuring 
               comprehensive caching, scalable architecture, and beautiful user experience.
             </Typography>
           </Grid>
@@ -39,7 +39,7 @@ const Footer = () => {
                 Home
               </Link>
               <Link href="/explore" color="inherit" underline="hover" variant="body2">
-                Explore Photos
+                Explore Videos
               </Link>
               <Link href="/register" color="inherit" underline="hover" variant="body2">
                 Join Community
