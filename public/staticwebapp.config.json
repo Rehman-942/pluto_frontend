@@ -11,6 +11,34 @@
       "headers": {
         "Cache-Control": "public, max-age=31536000"
       }
+    },
+    {
+      "route": "/video/*",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/profile/*",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/upload",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/login",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/register",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/creator-home",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/liked",
+      "rewrite": "/index.html"
     }
   ],
   "mimeTypes": {
@@ -21,6 +49,6 @@
   },
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/favicon.ico", "/manifest.json", "/robots.txt", "/*.{css,js,woff,png,jpg,svg,gif,ico}"]
+    "exclude": ["/favicon.ico", "/manifest.json", "/robots.txt", "/*.{css,js,woff,png,jpg,svg,gif,ico}", "/api/*"]
   }
 }
