@@ -137,12 +137,20 @@ const EditProfile = () => {
     }
   };
 
-  const handleUploadAvatar = () => {
-    if (avatarFile) {
-      const formData = new FormData();
-      formData.append('avatar', avatarFile);
-      uploadAvatarMutation.mutate(formData);
+  const handleUploadAvatar = async () => {
+    if (!avatarFile) {
+      toast.error('Please select an image file first');
+      return;
     }
+
+    if (uploadAvatarMutation.isLoading) {
+      return; // Prevent multiple uploads
+    }
+
+    const formData = new FormData();
+    formData.append('avatar', avatarFile);
+
+    uploadAvatarMutation.mutate(formData);
   };
 
   const handleDeleteAvatar = () => {

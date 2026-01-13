@@ -17,10 +17,10 @@ export const commentService = {
   createComment: async (commentData) => {
     const response = await apiService.post('/comments', commentData);
     
-    // Clear comments cache for the video
-    apiService.clearCache(`/comments/video/${commentData.videoId}`);
+    // Clear comments cache for the video using proper invalidateCache method
+    apiService.invalidateCache(`/comments/video/${commentData.videoId}`);
     if (commentData.parentId) {
-      apiService.clearCache(`/comments/${commentData.parentId}/thread`);
+      apiService.invalidateCache(`/comments/${commentData.parentId}/thread`);
     }
     
     return response;
@@ -30,8 +30,8 @@ export const commentService = {
   updateComment: async (id, commentData) => {
     const response = await apiService.put(`/comments/${id}`, commentData);
     
-    // Clear comment-related caches
-    apiService.clearCache('/comments');
+    // Clear comment-related caches using proper invalidateCache method
+    apiService.invalidateCache('/comments');
     
     return response;
   },
@@ -40,8 +40,8 @@ export const commentService = {
   deleteComment: async (id) => {
     const response = await apiService.delete(`/comments/${id}`);
     
-    // Clear comment-related caches
-    apiService.clearCache('/comments');
+    // Clear comment-related caches using proper invalidateCache method
+    apiService.invalidateCache('/comments');
     
     return response;
   },
@@ -50,8 +50,8 @@ export const commentService = {
   likeComment: async (id) => {
     const response = await apiService.post(`/comments/${id}/like`);
     
-    // Clear comment caches
-    apiService.clearCache('/comments');
+    // Clear comment caches using proper invalidateCache method
+    apiService.invalidateCache('/comments');
     
     return response;
   },

@@ -96,7 +96,30 @@ const Home = () => {
     setPage(prev => prev + 1);
   };
 
-  const handleLike = async (videoId) => {
+  // Helper function to check if video is liked by current user
+  const isVideoLiked = (video) => {
+    // First check if isLikedByUser field exists (from backend)
+    if (video.isLikedByUser !== undefined) {
+      return video.isLikedByUser;
+    }
+    
+    // Fallback: check if current user ID is in likes array
+    if (user?.id && video.likes && Array.isArray(video.likes)) {
+      return video.likes.some(like => 
+        like.userId && like.userId.toString() === user.id.toString()
+      );
+    }
+    
+    return false;
+  };
+
+  const handleLike = async (videoId, event) => {
+    // Prevent navigation when clicking like button
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
     if (!isAuthenticated) {
       toast.error('Please log in to like videos');
       navigate('/login');
@@ -106,23 +129,27 @@ const Home = () => {
     try {
       const response = await videoService.likeVideo(videoId);
       
-      // Update local state
+      // Update local state based on API response
       setVideos(prev => prev.map(video => {
         if (video._id === videoId) {
+          const newIsLiked = response?.data?.data?.isLiked ?? !video.isLikedByUser;
           return {
             ...video,
-            isLiked: !video.isLiked,
+            isLikedByUser: newIsLiked,
             stats: {
               ...video.stats,
-              likesCount: video.isLiked 
-                ? video.stats.likesCount - 1 
-                : video.stats.likesCount + 1
+              likesCount: newIsLiked 
+                ? (video.stats?.likesCount || 0) + 1 
+                : Math.max((video.stats?.likesCount || 0) - 1, 0)
             }
           };
         }
         return video;
       }));
+      
+      toast.success(response?.data?.isLiked ? '❤️ Video liked!' : '💔 Video unliked!');
     } catch (error) {
+      console.error('Like error:', error);
       toast.error('Failed to like video');
     }
   };
@@ -224,12 +251,13 @@ const Home = () => {
             <IconButton 
               size="small"
               onClick={(e) => {
+                console.log('video like', video);
                 e.stopPropagation();
                 handleLike(video._id);
               }}
-              color={video.isLiked ? 'error' : 'default'}
+              color={isVideoLiked(video) ? 'error' : 'default'}
             >
-              {video.isLiked ? <Favorite color="error" /> : <FavoriteOutlined />}
+              {isVideoLiked(video) ? <Favorite color="error" /> : <FavoriteOutlined />}
             </IconButton>
             <Typography variant="caption">{video.stats?.likesCount || 0}</Typography>
             
@@ -275,7 +303,8 @@ const Home = () => {
           sx={{
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
-            py: 8,
+            pt: 12,
+            pb: 8,
             mb: 4,
           }}
         >
@@ -307,7 +336,7 @@ const Home = () => {
                     onClick={() => navigate('/explore')}
                     sx={{ borderColor: 'white', color: 'white' }}
                   >
-                    Explore Videos
+                    Like Videos
                   </Button>
                 </Box>
               </Grid>

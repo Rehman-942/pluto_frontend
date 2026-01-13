@@ -69,9 +69,9 @@ export const userService = {
   deactivateAccount: async (id) => {
     const response = await apiService.delete(`/users/${id}`);
     
-    // Clear user cache
+    // Clear user cache using proper invalidateCache method
     apiService.invalidateCache(`/users/${id}`);
-    apiService.clearCache('/users');
+    apiService.invalidateCache('/users');
     
     return response;
   },

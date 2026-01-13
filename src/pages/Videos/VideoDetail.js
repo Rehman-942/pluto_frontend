@@ -7,7 +7,6 @@ import {
   Box,
   Paper,
   Avatar,
-  IconButton,
   Button,
   Chip,
   TextField,
@@ -20,7 +19,6 @@ import {
   Favorite,
   FavoriteBorder,
   Share,
-  MoreVert,
   Edit,
   Delete,
   Send,
@@ -41,7 +39,7 @@ import toast from 'react-hot-toast';
 
 const VideoDetail = () => {
   const { id } = useParams();
-  const { isAuthenticated, canPerformAction } = useAuth();
+  const { isAuthenticated, canPerformAction, user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
@@ -74,6 +72,25 @@ const VideoDetail = () => {
       }
     }
   );
+
+  // Helper function to check if video is liked by current user
+  const isVideoLiked = (video) => {
+    if (!video) return false;
+    
+    // First check if isLikedByUser field exists (from backend)
+    if (video.isLikedByUser !== undefined) {
+      return video.isLikedByUser;
+    }
+    
+    // Fallback: check if current user ID is in likes array
+    if (user?.id && video.likes && Array.isArray(video.likes)) {
+      return video.likes.some(like => 
+        like.userId && like.userId.toString() === user.id.toString()
+      );
+    }
+    
+    return false;
+  };
 
   // Fetch video comments
   const { data: commentsData, isLoading: commentsLoading } = useQuery(
@@ -143,8 +160,8 @@ const VideoDetail = () => {
         
         // The response should be the API response data directly
         if (response?.success) {
-          const isLiked = response?.data?.isLiked;
-          console.log('Like status from response.data.isLiked:', isLiked);
+          const isLiked = response?.data?.data?.isLiked;
+          console.log('Like status from response.data.data.isLiked:', isLiked);
           
           if (isLiked !== undefined) {
             toast.success(isLiked ? '❤️ Video liked!' : '💔 Video unliked!');
@@ -261,6 +278,10 @@ const VideoDetail = () => {
       toast.error('Please log in to like videos');
       navigate('/login');
       return;
+    }
+    
+    if (likeMutation.isLoading) {
+      return; // Prevent multiple clicks
     }
     
     console.log('Triggering like for video:', id);
@@ -481,11 +502,11 @@ const VideoDetail = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   {/* Like Button */}
                   <Button
-                    variant={video.isLikedByUser ? 'contained' : 'outlined'}
-                    startIcon={video.isLikedByUser ? <Favorite /> : <FavoriteBorder />}
+                    variant={isVideoLiked(video) ? 'contained' : 'outlined'}
+                    startIcon={isVideoLiked(video) ? <Favorite /> : <FavoriteBorder />}
                     onClick={handleLike}
                     disabled={likeMutation.isLoading}
-                    color={video.isLikedByUser ? 'error' : 'inherit'}
+                    color={isVideoLiked(video) ? 'error' : 'inherit'}
                   >
                     {formatNumber(video.stats?.likesCount || 0)}
                   </Button>

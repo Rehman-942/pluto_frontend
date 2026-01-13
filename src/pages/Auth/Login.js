@@ -44,6 +44,18 @@ const Login = () => {
 
   const onSubmit = async (data, event) => {
     event?.preventDefault();
+    clearError(); // Clear any previous errors
+    
+    // Basic validation
+    if (!data.email?.trim()) {
+      setError('email', { type: 'manual', message: 'Email is required' });
+      return;
+    }
+    if (!data.password?.trim()) {
+      setError('password', { type: 'manual', message: 'Password is required' });
+      return;
+    }
+    
     try {
       const result = await login(data);
       

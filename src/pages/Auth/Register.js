@@ -55,6 +55,34 @@ const Register = () => {
 
   const onSubmit = async (data, event) => {
     event?.preventDefault();
+    clearError(); // Clear any previous errors
+    
+    // Validation
+    if (!data.firstName?.trim()) {
+      setError('firstName', { type: 'manual', message: 'First name is required' });
+      return;
+    }
+    if (!data.lastName?.trim()) {
+      setError('lastName', { type: 'manual', message: 'Last name is required' });
+      return;
+    }
+    if (!data.email?.trim()) {
+      setError('email', { type: 'manual', message: 'Email is required' });
+      return;
+    }
+    if (!data.username?.trim()) {
+      setError('username', { type: 'manual', message: 'Username is required' });
+      return;
+    }
+    if (data.password !== data.confirmPassword) {
+      setError('confirmPassword', { type: 'manual', message: 'Passwords do not match' });
+      return;
+    }
+    if (data.password.length < 6) {
+      setError('password', { type: 'manual', message: 'Password must be at least 6 characters' });
+      return;
+    }
+    
     try {
       const { confirmPassword, ...userData } = data;
       const result = await registerUser(userData);

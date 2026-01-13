@@ -217,7 +217,7 @@ const Explore = () => {
   return (
     <>
       <Helmet>
-        <title>Pluto - Explore Videos</title>
+        <title>Pluto - Like Videos</title>
         <meta name="description" content="Discover amazing videos from the Pluto community" />
       </Helmet>
 
@@ -325,7 +325,7 @@ const Explore = () => {
               Start exploring and like videos to see them here
             </Typography>
             <Button variant="contained" onClick={() => navigate('/')}>
-              Explore Videos
+              Like Videos
             </Button>
           </Box>
         )}

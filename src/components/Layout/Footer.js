@@ -39,7 +39,7 @@ const Footer = () => {
                 Home
               </Link>
               <Link href="/explore" color="inherit" underline="hover" variant="body2">
-                Explore Videos
+                Liked Videos
               </Link>
               <Link href="/register" color="inherit" underline="hover" variant="body2">
                 Join Community

@@ -72,7 +72,16 @@ const VideoUpload = () => {
   // Upload mutation using proxy upload service
   const uploadMutation = useMutation(
     async (uploadData) => {
+      setIsProcessing(true);
       console.log('Starting proxy video upload...');
+      
+      // Validate required fields
+      if (!selectedFile) {
+        throw new Error('Video file is required');
+      }
+      if (!uploadData.title?.trim()) {
+        throw new Error('Video title is required');
+      }
       
       // Use proxy upload service to avoid CORS issues
       const result = await proxyUploadService.uploadVideo(

@@ -53,8 +53,8 @@ class VideoService {
       }
     });
     
-    // Clear cache
-    apiClient.clearCache('videos');
+    // Note: Cache invalidation handled by React Query mutations
+    // No manual cache clearing needed here
     
     return response.data;
   }
@@ -63,9 +63,8 @@ class VideoService {
   async updateVideo(id, videoData) {
     const response = await apiClient.put(`/videos/${id}`, videoData);
     
-    // Clear cache
-    apiClient.clearCache('videos');
-    apiClient.clearCache(`video-${id}`);
+    // Note: Cache invalidation handled by React Query mutations
+    // No manual cache clearing needed here
     
     return response.data;
   }
@@ -74,9 +73,8 @@ class VideoService {
   async deleteVideo(id) {
     const response = await apiClient.delete(`/videos/${id}`);
     
-    // Clear cache
-    apiClient.clearCache('videos');
-    apiClient.clearCache(`video-${id}`);
+    // Note: Cache invalidation handled by React Query mutations
+    // No manual cache clearing needed here
     
     return response.data;
   }
@@ -92,8 +90,8 @@ class VideoService {
     console.log('VideoService: response.data.data:', response.data.data);
     console.log('VideoService: response.data.data.isLiked:', response.data.data?.isLiked);
     
-    // Clear cache
-    apiClient.clearCache(`video-${id}`);
+    // Note: Cache invalidation is handled by React Query mutations
+    // No need to manually clear cache here
     
     console.log('VideoService: Returning response.data:', response.data);
     return response.data;
