@@ -61,7 +61,17 @@ const Profile = () => {
   );
 
   const videos = videosData?.data.videos || [];
-  const stats = statsData?.data.stats || user?.stats || {};
+  const stats = statsData?.data?.data?.stats || user?.stats || {};
+
+  console.log('=== PROFILE.JS DEBUG FIXED ===');
+  console.log('Raw statsData:', statsData);
+  console.log('Correct path data:', statsData?.data?.data);
+  console.log('Extracted stats:', stats);
+  console.log('Stats structure:', {
+    totalViews: stats.totalViews,
+    totalLikes: stats.totalLikes,
+    totalComments: stats.totalComments
+  });
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
