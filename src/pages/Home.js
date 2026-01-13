@@ -7,7 +7,6 @@ import {
   Box,
   Button,
   Card,
-  CardMedia,
   CardContent,
   Avatar,
   Chip,
@@ -26,6 +25,7 @@ import {
   Videocam,
   VideoLibrary,
 } from '@mui/icons-material';
+import VideoThumbnail from '../components/Video/VideoThumbnail';
 import { useTheme } from '@mui/material/styles';
 import { useQuery } from 'react-query';
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -140,12 +140,12 @@ const Home = () => {
       }}
       onClick={() => navigate(`/video/${video._id}`)}
     >
-      <CardMedia
-        component="img"
-        height={isMobile ? "200" : "240"}
-        image={video.video?.original?.url || video.thumbnails?.[0]?.url}
+      <VideoThumbnail
+        videoUrl={video.video?.original?.url}
+        thumbnailUrl={video.thumbnails?.poster?.url || video.thumbnails?.medium?.url || video.thumbnails?.[0]?.url}
         alt={video.title}
-        sx={{ objectFit: 'cover' }}
+        height={isMobile ? 200 : 240}
+        onClick={() => navigate(`/video/${video._id}`)}
       />
       <CardContent sx={{ pb: 1 }}>
         <Typography variant="subtitle1" fontWeight={600} noWrap>
@@ -192,29 +192,31 @@ const Home = () => {
         )}
 
         {/* Creator Info */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, mb: 1 }}>
-          <Avatar 
-            src={video.creator.avatar?.url} 
-            sx={{ width: 32, height: 32, mr: 1 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/user/${video.creator.username}`);
-            }}
-          >
-            {video.creator.firstName?.[0]}
-          </Avatar>
-          <Typography 
-            variant="body2" 
-            fontWeight={500}
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/user/${video.creator.username}`);
-            }}
-            sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-          >
-            {video.creator.firstName} {video.creator.lastName}
-          </Typography>
-        </Box>
+        {video.creatorId && (
+          <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, mb: 1 }}>
+            <Avatar 
+              src={video.creatorId.avatar?.url} 
+              sx={{ width: 32, height: 32, mr: 1 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/user/${video.creatorId.username}`);
+              }}
+            >
+              {video.creatorId.firstName?.[0]}
+            </Avatar>
+            <Typography 
+              variant="body2" 
+              fontWeight={500}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/user/${video.creatorId.username}`);
+              }}
+              sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+            >
+              {video.creatorId.firstName} {video.creatorId.lastName}
+            </Typography>
+          </Box>
+        )}
 
         {/* Stats */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -337,13 +339,11 @@ const Home = () => {
           <Tabs value={tabValue} onChange={handleTabChange} aria-label="photo tabs">
             <Tab 
               label="Latest" 
-              startIcon={<Videocam />} 
-              iconPosition="start"
+              icon={<Videocam />}
             />
             <Tab 
               label="Trending" 
-              icon={<TrendingUp />} 
-              iconPosition="start"
+              icon={<TrendingUp />}
             />
           </Tabs>
         </Box>

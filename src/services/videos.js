@@ -82,13 +82,18 @@ class VideoService {
   }
 
   // Like/unlike video
-  async toggleLike(id) {
+  async likeVideo(id) {
     const response = await apiClient.post(`/videos/${id}/like`);
     
     // Clear cache
     apiClient.clearCache(`video-${id}`);
     
     return response.data;
+  }
+
+  // Legacy method for compatibility
+  async toggleLike(id) {
+    return this.likeVideo(id);
   }
 
   // Update watch time for video

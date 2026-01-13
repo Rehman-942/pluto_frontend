@@ -13,11 +13,9 @@ import {
   MenuItem,
   Chip,
   LinearProgress,
-  Alert,
   Grid,
   Card,
   CardContent,
-  IconButton,
   Stepper,
   Step,
   StepLabel,
@@ -27,8 +25,6 @@ import {
   VideoFile,
   Add,
   Delete,
-  PlayArrow,
-  Pause,
   Cancel,
   Publish,
   CheckCircle,
@@ -38,15 +34,15 @@ import { useForm, Controller } from 'react-hook-form';
 import { useMutation } from 'react-query';
 import { Helmet } from 'react-helmet-async';
 import { proxyUploadService } from '../../services/proxyUpload';
-import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const VideoUpload = () => {
-  const { canPerformAction } = useAuth();
   const navigate = useNavigate();
   
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedThumbnail, setSelectedThumbnail] = useState(null);
   const [videoPreview, setVideoPreview] = useState(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
@@ -55,6 +51,7 @@ const VideoUpload = () => {
   
   const videoRef = useRef(null);
   const fileInputRef = useRef(null);
+  const thumbnailInputRef = useRef(null);
 
   const steps = ['Upload Video', 'Add Details', 'Review & Publish'];
 
@@ -75,14 +72,11 @@ const VideoUpload = () => {
   // Upload mutation using proxy upload service
   const uploadMutation = useMutation(
     async (uploadData) => {
-      const { file, videoData } = uploadData;
-      
       console.log('Starting proxy video upload...');
       
       // Use proxy upload service to avoid CORS issues
       const result = await proxyUploadService.uploadVideo(
-        file,
-        videoData,
+        uploadData,
         (progress) => {
           console.log('Upload progress:', progress);
           setUploadProgress(progress);
@@ -180,6 +174,37 @@ const VideoUpload = () => {
     }
   };
 
+  const handleThumbnailSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select a valid image file');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Thumbnail file size must be less than 5MB');
+        return;
+      }
+      
+      setSelectedThumbnail(file);
+      
+      // Create thumbnail preview
+      const thumbnailUrl = URL.createObjectURL(file);
+      setThumbnailPreview(thumbnailUrl);
+    }
+  };
+
+  const handleRemoveThumbnail = () => {
+    if (thumbnailPreview) {
+      URL.revokeObjectURL(thumbnailPreview);
+    }
+    setSelectedThumbnail(null);
+    setThumbnailPreview(null);
+  };
+
   const onSubmit = (data) => {
     if (!selectedFile) {
       toast.error('Please select a video file');
@@ -189,7 +214,8 @@ const VideoUpload = () => {
     setIsProcessing(true);
     
     const uploadData = {
-      file: selectedFile,
+      videoFile: selectedFile,
+      thumbnailFile: selectedThumbnail, // Optional thumbnail
       videoData: {
         title: data.title,
         description: data.description,
@@ -427,6 +453,86 @@ const VideoUpload = () => {
                     <Typography variant="caption" color="text.secondary">
                       Add up to 10 tags to help people discover your video
                     </Typography>
+                  </Box>
+
+                  {/* Thumbnail Section */}
+                  <Box>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Custom Thumbnail (Optional)
+                    </Typography>
+                    
+                    {!thumbnailPreview ? (
+                      <Box>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleThumbnailSelect}
+                          ref={thumbnailInputRef}
+                          style={{ display: 'none' }}
+                        />
+                        <Button
+                          variant="outlined"
+                          startIcon={<CloudUpload />}
+                          onClick={() => thumbnailInputRef.current?.click()}
+                          disabled={uploadMutation.isLoading}
+                          sx={{ mb: 1 }}
+                        >
+                          Upload Thumbnail
+                        </Button>
+                        <Typography variant="caption" display="block" color="text.secondary">
+                          Supported formats: JPG, PNG, GIF • Max size: 5MB • Recommended: 1280x720
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Box>
+                        <Card sx={{ maxWidth: 300, mb: 2 }}>
+                          <Box
+                            component="img"
+                            src={thumbnailPreview}
+                            alt="Thumbnail preview"
+                            sx={{
+                              width: '100%',
+                              height: 'auto',
+                              maxHeight: 200,
+                              objectFit: 'cover'
+                            }}
+                          />
+                          <CardContent sx={{ pt: 1, pb: '16px !important' }}>
+                            <Typography variant="body2" color="text.secondary">
+                              {selectedThumbnail?.name}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<CloudUpload />}
+                                onClick={() => thumbnailInputRef.current?.click()}
+                                disabled={uploadMutation.isLoading}
+                              >
+                                Change
+                              </Button>
+                              <Button
+                                size="small"
+                                color="error"
+                                startIcon={<Delete />}
+                                onClick={handleRemoveThumbnail}
+                                disabled={uploadMutation.isLoading}
+                              >
+                                Remove
+                              </Button>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                        
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleThumbnailSelect}
+                          ref={thumbnailInputRef}
+                          style={{ display: 'none' }}
+                        />
+                      </Box>
+                    )}
                   </Box>
                 </Box>
               </Grid>

@@ -30,6 +30,7 @@ import {
   Comment,
   Add,
 } from '@mui/icons-material';
+import VideoThumbnail from '../components/Video/VideoThumbnail';
 import { useQuery } from 'react-query';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { Helmet } from 'react-helmet-async';
@@ -160,18 +161,13 @@ const Explore = () => {
       }}
       onClick={() => navigate(`/video/${video._id}`)}
     >
-      <CardMedia
-        component="img"
-        height={isListView ? "200" : "250"}
-        image={video.video?.original?.url || video.thumbnails?.[0]?.url}
+      <VideoThumbnail
+        videoUrl={video.video?.original?.url}
+        thumbnailUrl={video.thumbnails?.poster?.url || video.thumbnails?.medium?.url || video.thumbnails?.[0]?.url}
         alt={video.title}
-        sx={{ 
-          objectFit: 'cover',
-          ...(isListView && { 
-            width: { xs: '100%', sm: 300 },
-            height: { xs: 200, sm: 'auto' }
-          })
-        }}
+        height={isListView ? 200 : 250}
+        width={isListView ? { xs: '100%', sm: 300 } : '100%'}
+        onClick={() => navigate(`/video/${video._id}`)}
       />
       <CardContent sx={{ flexGrow: 1 }}>
         <Typography variant="h6" fontWeight={600} noWrap>

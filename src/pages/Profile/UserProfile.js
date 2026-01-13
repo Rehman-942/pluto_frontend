@@ -27,6 +27,7 @@ import {
   Instagram,
   Twitter,
 } from '@mui/icons-material';
+import VideoThumbnail from '../../components/Video/VideoThumbnail';
 import { useQuery } from 'react-query';
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
@@ -172,12 +173,11 @@ const UserProfile = () => {
       }}
       onClick={() => navigate(`/video/${video._id}`)}
     >
-      <CardMedia
-        component="img"
-        height="200"
-        image={video.video?.original?.url || video.thumbnails?.[0]?.url}
+      <VideoThumbnail
+        thumbnailUrl={video.thumbnails?.poster?.url || video.thumbnails?.medium?.url || video.thumbnails?.[0]?.url}
         alt={video.title}
-        sx={{ objectFit: 'cover' }}
+        height={200}
+        onClick={() => navigate(`/video/${video._id}`)}
       />
       <CardContent sx={{ pb: 2 }}>
         <Typography variant="subtitle2" fontWeight={600} noWrap>

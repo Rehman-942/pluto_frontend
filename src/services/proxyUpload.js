@@ -2,29 +2,41 @@ import { apiService } from './api';
 
 export const proxyUploadService = {
   /**
-   * Upload video through backend proxy (avoids CORS issues)
-   * @param {File} file - Video file to upload
-   * @param {Object} videoData - Video metadata
+   * Upload video with optional thumbnail through backend proxy (avoids CORS issues)
+   * @param {Object} uploadData - Upload data containing videoFile, thumbnailFile, and videoData
    * @param {Function} onProgress - Progress callback
    * @returns {Promise<Object>} Upload result
    */
-  uploadVideo: async (file, videoData, onProgress = null) => {
+  uploadVideo: async (uploadData, onProgress = null) => {
     console.log('=== PROXY UPLOAD DEBUG ===');
-    console.log('File:', file);
-    console.log('VideoData:', videoData);
-    console.log('VideoData type:', typeof videoData);
-    console.log('VideoData keys:', videoData ? Object.keys(videoData) : 'undefined');
+    console.log('UploadData:', uploadData);
+    console.log('VideoFile:', uploadData.videoFile);
+    console.log('ThumbnailFile:', uploadData.thumbnailFile);
+    console.log('VideoData:', uploadData.videoData);
+    console.log('VideoData type:', typeof uploadData.videoData);
+    console.log('VideoData keys:', uploadData.videoData ? Object.keys(uploadData.videoData) : 'undefined');
 
-    if (!videoData) {
+    if (!uploadData.videoData) {
       throw new Error('VideoData is undefined');
     }
 
+    if (!uploadData.videoFile) {
+      throw new Error('VideoFile is required');
+    }
+
     const formData = new FormData();
-    formData.append('video', file);
-    formData.append('title', videoData.title || 'Untitled Video');
-    formData.append('description', videoData.description || '');
-    formData.append('visibility', videoData.visibility || 'public');
-    formData.append('tags', JSON.stringify(videoData.tags || []));
+    formData.append('video', uploadData.videoFile);
+    
+    // Add thumbnail if provided
+    if (uploadData.thumbnailFile) {
+      console.log('Adding thumbnail file:', uploadData.thumbnailFile.name);
+      formData.append('thumbnail', uploadData.thumbnailFile);
+    }
+    
+    formData.append('title', uploadData.videoData.title || 'Untitled Video');
+    formData.append('description', uploadData.videoData.description || '');
+    formData.append('visibility', uploadData.videoData.visibility || 'public');
+    formData.append('tags', JSON.stringify(uploadData.videoData.tags || []));
 
     try {
       console.log('Starting proxy upload...');

@@ -63,9 +63,6 @@ const Footer = () => {
                 • MongoDB Database
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                • Redis Caching Layer
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
                 • Azure Blob Storage
               </Typography>
             </Box>
