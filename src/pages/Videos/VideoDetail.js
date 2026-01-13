@@ -101,6 +101,11 @@ const VideoDetail = () => {
     }
   );
 
+  console.log('=== COMMENTS DEBUG ===');
+  console.log('Comments data:', commentsData);
+  console.log('Comments loading:', commentsLoading);
+  console.log('Video ID:', id);
+
   // Fetch related videos based on tags
   const { data: relatedVideosData, isLoading: relatedVideosLoading } = useQuery(
     ['relatedVideos', id, videoData?.data.video?.tags],
@@ -263,7 +268,18 @@ const VideoDetail = () => {
   );
 
   const video = videoData?.data.video;
-  const comments = commentsData?.data.comments || [];
+  const comments = commentsData?.data?.data?.comments || [];
+  
+  console.log('=== VIDEO DEBUG ===');
+  console.log('Full video data:', video);
+  console.log('Creator info:', video?.creatorId);
+  console.log('Creator name:', video?.creatorId?.firstName, video?.creatorId?.lastName);
+  console.log('Creator username:', video?.creatorId?.username);
+  
+  console.log('=== COMMENT PARSING DEBUG ===');
+  console.log('Raw comments response:', commentsData?.data);
+  console.log('Parsed comments array:', comments);
+  console.log('Comments length:', comments.length);
 
   // Track video view on component mount
   React.useEffect(() => {
@@ -574,7 +590,7 @@ const VideoDetail = () => {
                       {video.creatorId?.firstName} {video.creatorId?.lastName}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      @{video.creatorId?.username}
+                      @{video.creatorId?.username} {console.log('video')}
                     </Typography>
                     {video.creatorId?.bio && (
                       <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
@@ -767,6 +783,77 @@ const VideoDetail = () => {
                                 </Button>
                               </>
                             )}
+                          </Box>
+                        )}
+                        
+                        {/* Replies */}
+                        {comment.replies && comment.replies.length > 0 && (
+                          <Box sx={{ ml: 4, mt: 2, borderLeft: '2px solid', borderColor: 'grey.200', pl: 2 }}>
+                            {comment.replies.map((reply) => (
+                              <Box key={reply._id} sx={{ mb: 2 }}>
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                  <Avatar
+                                    src={reply.user?.avatar?.url}
+                                    sx={{ width: 24, height: 24 }}
+                                  >
+                                    {reply.user?.firstName?.[0]}
+                                  </Avatar>
+                                  
+                                  <Box sx={{ flexGrow: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <Typography variant="caption" fontWeight={600}>
+                                        {reply.user?.firstName} {reply.user?.lastName}
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {formatRelativeTime(reply.createdAt)}
+                                      </Typography>
+                                    </Box>
+                                    
+                                    <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.875rem' }}>
+                                      {reply.content}
+                                    </Typography>
+                                    
+                                    {/* Reply actions */}
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                      <Button 
+                                        size="small" 
+                                        startIcon={reply.isLiked ? <Favorite /> : <FavoriteBorder />}
+                                        onClick={() => handleCommentLike(reply._id)}
+                                        disabled={commentLikeMutation.isLoading}
+                                        color={reply.isLiked ? "primary" : "inherit"}
+                                        sx={{ fontSize: '0.75rem', minWidth: 'auto', px: 1 }}
+                                      >
+                                        {reply.stats?.likesCount || 0}
+                                      </Button>
+                                      
+                                      {isAuthenticated && user?._id === reply.user?._id && (
+                                        <>
+                                          <Button
+                                            size="small"
+                                            onClick={() => {
+                                              setEditingComment(reply._id);
+                                              setEditCommentContent(reply.content);
+                                            }}
+                                            sx={{ fontSize: '0.75rem', minWidth: 'auto', px: 1 }}
+                                          >
+                                            Edit
+                                          </Button>
+                                          <Button
+                                            size="small"
+                                            color="error"
+                                            onClick={() => handleCommentDelete(reply._id)}
+                                            disabled={commentDeleteMutation.isLoading}
+                                            sx={{ fontSize: '0.75rem', minWidth: 'auto', px: 1 }}
+                                          >
+                                            Delete
+                                          </Button>
+                                        </>
+                                      )}
+                                    </Box>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            ))}
                           </Box>
                         )}
                       </Box>
