@@ -24,7 +24,7 @@ import {
   Settings,
   Logout,
   Home,
-  Explore,
+  Favorite,
   Person,
   CloudUpload,
 } from '@mui/icons-material';
@@ -197,7 +197,7 @@ const Navbar = () => {
             color="inherit"
             component={Link}
             to="/explore"
-            startIcon={<Explore />}
+            startIcon={<Favorite />}
             sx={{
               mx: 1,
               fontWeight: isActive('/explore') ? 600 : 400,
@@ -206,25 +206,9 @@ const Navbar = () => {
               borderRadius: 0,
             }}
           >
-            Explore
+            Liked Videos
           </Button>
         </Box>
-
-        {/* Search */}
-        <Search>
-          <SearchIconWrapper>
-            <SearchIcon />
-          </SearchIconWrapper>
-          <form onSubmit={handleSearch}>
-            <StyledInputBase
-              placeholder="Search photos..."
-              inputProps={{ 'aria-label': 'search' }}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </form>
-        </Search>
-
         <Box sx={{ flexGrow: 1 }} />
 
         {/* User Actions */}

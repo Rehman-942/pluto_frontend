@@ -110,6 +110,12 @@ class VideoService {
     const response = await apiClient.get('/videos', { params: searchParams });
     return response.data;
   }
+
+  // Get liked videos for current user
+  async getLikedVideos(params = {}) {
+    const response = await apiClient.get('/videos/liked', { params });
+    return response.data;
+  }
 }
 
 export const videoService = new VideoService();

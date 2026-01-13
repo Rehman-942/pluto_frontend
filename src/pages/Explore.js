@@ -54,11 +54,20 @@ const Explore = () => {
   });
   const [viewMode, setViewMode] = useState('grid');
 
+  // Get liked videos instead of all videos
   const { data: searchResults, isLoading, refetch } = useQuery(
-    ['explore', 'videos', filters, page],
-    () => videoService.searchVideos({ ...filters, page, limit: 20 }),
+    ['liked-videos', filters, page],
+    async () => {
+      if (!isAuthenticated) {
+        // Show trending videos for non-authenticated users
+        return videoService.getTrendingVideos({ ...filters, page, limit: 20 });
+      }
+      // For authenticated users, get their liked videos
+      return videoService.getLikedVideos({ ...filters, page, limit: 20 });
+    },
     {
       keepPreviousData: true,
+      enabled: true, // Always enabled, will switch based on auth status
     }
   );
 
@@ -273,10 +282,10 @@ const Explore = () => {
         {/* Header */}
         <Box sx={{ py: 4 }}>
           <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
-            Explore Videos
+            {isAuthenticated ? 'Your Liked Videos' : 'Trending Videos'}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Discover amazing videos from our creative community
+            {isAuthenticated ? 'Videos you\'ve liked and saved' : 'Popular videos from our creative community'}
           </Typography>
         </Box>
 
@@ -287,7 +296,7 @@ const Explore = () => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                placeholder="Search photos..."
+                placeholder="Search videos..."
                 value={filters.search}
                 onChange={(e) => handleSearch(e.target.value)}
                 InputProps={{

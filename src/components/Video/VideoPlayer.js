@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, forwardRef } from 'react';
 import {
   Box,
   IconButton,
@@ -22,13 +22,13 @@ import {
 } from '@mui/icons-material';
 import { videoService } from '../../services/videos';
 
-const VideoPlayer = ({ 
+const VideoPlayer = forwardRef(({ 
   video, 
   autoPlay = false, 
   onWatchTimeUpdate,
   className = '',
   ...props 
-}) => {
+}, ref) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
@@ -489,6 +489,6 @@ const VideoPlayer = ({
       )}
     </Box>
   );
-};
+});
 
 export default VideoPlayer;

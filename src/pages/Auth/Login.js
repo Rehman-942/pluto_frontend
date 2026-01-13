@@ -210,27 +210,6 @@ const Login = () => {
               </Box>
             </Box>
           </Paper>
-
-          {/* Demo Accounts Info */}
-          <Paper
-            elevation={1}
-            sx={{
-              mt: 2,
-              p: 2,
-              width: '100%',
-              backgroundColor: 'grey.50',
-            }}
-          >
-            <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-              Demo Accounts
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              <strong>Creator:</strong> demo.creator@pluto.com / password123
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              <strong>Consumer:</strong> demo.consumer@pluto.com / password123
-            </Typography>
-          </Paper>
         </Box>
       </Container>
     </>

@@ -10,7 +10,6 @@ import {
   IconButton,
   Button,
   Chip,
-  Divider,
   TextField,
   Alert,
   Skeleton,
@@ -24,18 +23,16 @@ import {
   MoreVert,
   Edit,
   Delete,
-  Flag,
   Send,
   Comment as CommentIcon,
-  PlayArrow,
   Visibility,
   Schedule,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useForm, Controller } from 'react-hook-form';
-import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
 import VideoPlayer from '../../components/Video/VideoPlayer';
+import VideoThumbnail from '../../components/Video/VideoThumbnail';
 import { videoService } from '../../services/videos';
 import { commentService } from '../../services/comments';
 import { useAuth } from '../../contexts/AuthContext';
@@ -51,6 +48,8 @@ const VideoDetail = () => {
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [replyToComment, setReplyToComment] = useState(null);
+  const [editingComment, setEditingComment] = useState(null);
+  const [editCommentContent, setEditCommentContent] = useState('');
   const playerRef = useRef(null);
 
   // Form for new comments
@@ -85,16 +84,82 @@ const VideoDetail = () => {
     }
   );
 
+  // Fetch related videos based on tags
+  const { data: relatedVideosData, isLoading: relatedVideosLoading } = useQuery(
+    ['relatedVideos', id, videoData?.data.video?.tags],
+    async () => {
+      const currentVideo = videoData?.data.video;
+      if (!currentVideo?.tags || currentVideo.tags.length === 0) {
+        // If no tags, get recent videos
+        const response = await videoService.getVideos({ page: 1, limit: 6 });
+        return response;
+      }
+      
+      // Get videos with similar tags
+      const response = await videoService.getVideos({ 
+        page: 1, 
+        limit: 20, // Fetch more to filter and sort
+        tags: currentVideo.tags.join(',')
+      });
+      
+      if (response.data && response.data.videos) {
+        // Filter out current video and calculate tag similarity
+        const otherVideos = response.data.videos
+          .filter(v => v._id !== currentVideo._id)
+          .map(v => {
+            // Calculate similarity score based on common tags
+            const commonTags = v.tags?.filter(tag => currentVideo.tags.includes(tag)) || [];
+            const similarity = commonTags.length / Math.max(currentVideo.tags.length, v.tags?.length || 1);
+            return { ...v, similarity };
+          })
+          .sort((a, b) => b.similarity - a.similarity) // Sort by similarity
+          .slice(0, 5); // Take top 5
+        
+        return {
+          ...response,
+          data: {
+            ...response.data,
+            videos: otherVideos
+          }
+        };
+      }
+      
+      return response;
+    },
+    {
+      enabled: !!videoData?.data.video && !!id,
+      staleTime: 5 * 60 * 1000 // 5 minutes
+    }
+  );
+
   // Like mutation
   const likeMutation = useMutation(
     () => videoService.toggleLike(id),
     {
-      onSuccess: () => {
+      onSuccess: (response) => {
+        console.log('Like API response:', response);
+        
+        // Show immediate feedback based on response
+        const responseData = response?.data;
+        if (responseData?.success) {
+          const isLiked = responseData?.data?.isLiked ?? responseData?.isLiked;
+          console.log('Like status:', isLiked);
+          
+          if (isLiked !== undefined) {
+            toast.success(isLiked ? '❤️ Video liked!' : '💔 Video unliked!');
+          } else {
+            toast.success('👍 Like updated!');
+          }
+        }
+        
+        // Invalidate and refetch to ensure UI updates
         queryClient.invalidateQueries(['video', id]);
-        toast.success('Video liked!');
+        queryClient.invalidateQueries(['videos']);
+        queryClient.refetchQueries(['video', id]);
       },
-      onError: () => {
-        toast.error('Failed to like video');
+      onError: (error) => {
+        console.error('Like error:', error);
+        toast.error('❌ Failed to update like');
       }
     }
   );
@@ -131,8 +196,59 @@ const VideoDetail = () => {
     }
   );
 
+  // Comment like mutation
+  const commentLikeMutation = useMutation(
+    (commentId) => commentService.likeComment(commentId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['comments', 'video', id]);
+        toast.success('Comment liked!');
+      },
+      onError: () => {
+        toast.error('Failed to like comment');
+      }
+    }
+  );
+
+  // Comment delete mutation
+  const commentDeleteMutation = useMutation(
+    (commentId) => commentService.deleteComment(commentId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['comments', 'video', id]);
+        queryClient.invalidateQueries(['video', id]);
+        toast.success('Comment deleted!');
+      },
+      onError: () => {
+        toast.error('Failed to delete comment');
+      }
+    }
+  );
+
+  // Comment update mutation
+  const commentUpdateMutation = useMutation(
+    ({ commentId, content }) => commentService.updateComment(commentId, { content }),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['comments', 'video', id]);
+        toast.success('Comment updated!');
+      },
+      onError: () => {
+        toast.error('Failed to update comment');
+      }
+    }
+  );
+
   const video = videoData?.data.video;
   const comments = commentsData?.data.comments || [];
+
+  // Track video view on component mount
+  React.useEffect(() => {
+    if (video?._id) {
+      // Increment view count when user views the video
+      videoService.updateWatchTime(video._id, 1).catch(console.error);
+    }
+  }, [video?._id]);
 
   const handleLike = () => {
     if (!isAuthenticated) {
@@ -140,6 +256,11 @@ const VideoDetail = () => {
       navigate('/login');
       return;
     }
+    
+    console.log('Triggering like for video:', id);
+    console.log('Current video like state:', video.isLikedByUser);
+    console.log('Current like count:', video.stats?.likesCount);
+    
     likeMutation.mutate();
   };
 
@@ -181,11 +302,6 @@ const VideoDetail = () => {
     handleMenuClose();
   };
 
-  const handleReport = () => {
-    // TODO: Implement report functionality
-    toast.info('Report functionality coming soon');
-    handleMenuClose();
-  };
 
   const onCommentSubmit = (data) => {
     if (!isAuthenticated) {
@@ -194,16 +310,64 @@ const VideoDetail = () => {
       return;
     }
 
-    commentMutation.mutate({
+    const commentData = {
       videoId: id,
       content: data.content,
-      parentId: replyToComment?._id || null
-    });
+    };
+
+    // Only add parentId if replying to a comment (must be string or omitted)
+    if (replyToComment?._id) {
+      commentData.parentId = replyToComment._id;
+    }
+
+    commentMutation.mutate(commentData);
   };
 
   const handleWatchTimeUpdate = (watchTime) => {
     // This will be called by the video player to track watch time
     console.log('Watch time update:', watchTime);
+    
+    // Update watch time on backend
+    videoService.updateWatchTime(id, watchTime).catch(console.error);
+  };
+
+  const handleCommentLike = (commentId) => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to like comments');
+      navigate('/login');
+      return;
+    }
+    commentLikeMutation.mutate(commentId);
+  };
+
+  const handleCommentDelete = (commentId) => {
+    if (window.confirm('Are you sure you want to delete this comment?')) {
+      commentDeleteMutation.mutate(commentId);
+    }
+  };
+
+  const handleCommentEdit = (comment) => {
+    setEditingComment(comment._id);
+    setEditCommentContent(comment.content);
+  };
+
+  const handleCommentUpdate = (commentId) => {
+    if (!editCommentContent.trim()) {
+      toast.error('Comment cannot be empty');
+      return;
+    }
+    
+    commentUpdateMutation.mutate({ 
+      commentId, 
+      content: editCommentContent.trim() 
+    });
+    setEditingComment(null);
+    setEditCommentContent('');
+  };
+
+  const cancelCommentEdit = () => {
+    setEditingComment(null);
+    setEditCommentContent('');
   };
 
   const formatDuration = (seconds) => {
@@ -315,6 +479,7 @@ const VideoDetail = () => {
                     startIcon={video.isLikedByUser ? <Favorite /> : <FavoriteBorder />}
                     onClick={handleLike}
                     disabled={likeMutation.isLoading}
+                    color={video.isLikedByUser ? 'error' : 'inherit'}
                   >
                     {formatNumber(video.stats?.likesCount || 0)}
                   </Button>
@@ -328,10 +493,7 @@ const VideoDetail = () => {
                     Share
                   </Button>
 
-                  {/* Menu Button */}
-                  <IconButton onClick={handleMenuClick}>
-                    <MoreVert />
-                  </IconButton>
+
                 </Box>
               </Box>
 
@@ -365,36 +527,41 @@ const VideoDetail = () => {
 
             {/* Creator Info */}
             <Paper sx={{ p: 3, mb: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar
-                  src={video.creatorId?.avatar?.url}
-                  sx={{ width: 56, height: 56 }}
-                  component={Link}
-                  to={`/user/${video.creatorId?.username}`}
-                >
-                  {video.creatorId?.firstName?.[0]}{video.creatorId?.lastName?.[0]}
-                </Avatar>
-                
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography
-                    variant="h6"
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar
+                    src={video.creatorId?.avatar?.url}
+                    sx={{ width: 56, height: 56 }}
                     component={Link}
                     to={`/user/${video.creatorId?.username}`}
-                    sx={{ textDecoration: 'none', color: 'inherit' }}
                   >
-                    {video.creatorId?.firstName} {video.creatorId?.lastName}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    @{video.creatorId?.username}
-                  </Typography>
-                </Box>
+                    {video.creatorId?.firstName?.[0]}{video.creatorId?.lastName?.[0]}
+                  </Avatar>
+                  
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography
+                      variant="h6"
+                      component={Link}
+                      to={`/user/${video.creatorId?.username}`}
+                      sx={{ textDecoration: 'none', color: 'inherit', fontWeight: 600 }}
+                    >
+                      {video.creatorId?.firstName} {video.creatorId?.lastName}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      @{video.creatorId?.username}
+                    </Typography>
+                    {video.creatorId?.bio && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        {video.creatorId.bio}
+                      </Typography>
+                    )}
+                  </Box>
 
-                {isAuthenticated && video.creatorId?._id !== video.creatorId?._id && (
-                  <Button variant="contained">
-                    Follow
-                  </Button>
-                )}
-              </Box>
+                  {isAuthenticated && video.creatorId?._id !== video.creatorId?._id && (
+                    <Button variant="contained" color="primary">
+                      Follow
+                    </Button>
+                  )}
+                </Box>
             </Paper>
 
             {/* Comments Section */}
@@ -498,23 +665,83 @@ const VideoDetail = () => {
                           {comment.content}
                         </Typography>
                         
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                          <Button size="small" startIcon={<FavoriteBorder />}>
-                            {comment.stats?.likesCount || 0}
-                          </Button>
-                          
-                          {isAuthenticated && (
-                            <Button
+                        {editingComment === comment._id ? (
+                          // Edit mode
+                          <Box sx={{ mt: 1 }}>
+                            <TextField
+                              fullWidth
+                              multiline
+                              rows={2}
+                              value={editCommentContent}
+                              onChange={(e) => setEditCommentContent(e.target.value)}
+                              variant="outlined"
                               size="small"
-                              onClick={() => {
-                                setReplyToComment(comment);
-                                setShowCommentForm(true);
-                              }}
+                              sx={{ mb: 1 }}
+                            />
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                onClick={() => handleCommentUpdate(comment._id)}
+                                disabled={commentUpdateMutation.isLoading}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={cancelCommentEdit}
+                              >
+                                Cancel
+                              </Button>
+                            </Box>
+                          </Box>
+                        ) : (
+                          // View mode
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                            <Button 
+                              size="small" 
+                              startIcon={comment.isLikedByUser ? <Favorite /> : <FavoriteBorder />}
+                              onClick={() => handleCommentLike(comment._id)}
+                              disabled={commentLikeMutation.isLoading}
+                              color={comment.isLikedByUser ? "primary" : "inherit"}
                             >
-                              Reply
+                              {comment.stats?.likesCount || 0}
                             </Button>
-                          )}
-                        </Box>
+                            
+                            {isAuthenticated && (
+                              <Button
+                                size="small"
+                                onClick={() => {
+                                  setReplyToComment(comment);
+                                  setShowCommentForm(true);
+                                }}
+                              >
+                                Reply
+                              </Button>
+                            )}
+
+                            {/* Edit/Delete for comment owner */}
+                            {isAuthenticated && canPerformAction('edit', comment) && (
+                              <>
+                                <Button
+                                  size="small"
+                                  onClick={() => handleCommentEdit(comment)}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleCommentDelete(comment._id)}
+                                  disabled={commentDeleteMutation.isLoading}
+                                >
+                                  Delete
+                                </Button>
+                              </>
+                            )}
+                          </Box>
+                        )}
                       </Box>
                     </Box>
                   </Box>
@@ -535,16 +762,94 @@ const VideoDetail = () => {
             </Typography>
             
             <Box sx={{ space: 2 }}>
-              {[...Array(5)].map((_, index) => (
-                <Paper key={index} sx={{ p: 2, mb: 2, display: 'flex', gap: 2 }}>
-                  <Skeleton variant="rectangular" width={120} height={68} />
-                  <Box>
-                    <Skeleton variant="text" width="100%" />
-                    <Skeleton variant="text" width="80%" />
-                    <Skeleton variant="text" width="60%" />
-                  </Box>
-                </Paper>
-              ))}
+              {relatedVideosLoading ? (
+                // Loading skeletons
+                [...Array(5)].map((_, index) => (
+                  <Paper key={index} sx={{ p: 2, mb: 2, display: 'flex', gap: 2 }}>
+                    <Skeleton variant="rectangular" width={120} height={68} />
+                    <Box>
+                      <Skeleton variant="text" width="100%" />
+                      <Skeleton variant="text" width="80%" />
+                      <Skeleton variant="text" width="60%" />
+                    </Box>
+                  </Paper>
+                ))
+              ) : relatedVideosData?.data?.videos?.length > 0 ? (
+                // Related videos
+                relatedVideosData.data.videos.map((relatedVideo) => (
+                  <Paper 
+                    key={relatedVideo._id} 
+                    sx={{ 
+                      p: 1, 
+                      mb: 2, 
+                      display: 'flex', 
+                      gap: 2,
+                      cursor: 'pointer',
+                      '&:hover': {
+                        bgcolor: 'action.hover'
+                      }
+                    }}
+                    onClick={() => navigate(`/video/${relatedVideo._id}`)}
+                  >
+                    <Box sx={{ width: 120, height: 68, flexShrink: 0 }}>
+                      <VideoThumbnail
+                        videoUrl={relatedVideo.video?.original?.url}
+                        thumbnailUrl={relatedVideo.thumbnails?.poster?.url}
+                        alt={relatedVideo.title}
+                        width={120}
+                        height={68}
+                        showPlayButton={true}
+                      />
+                    </Box>
+                    
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography 
+                        variant="body2" 
+                        fontWeight={600} 
+                        sx={{ 
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          mb: 0.5
+                        }}
+                      >
+                        {relatedVideo.title}
+                      </Typography>
+                      
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        {relatedVideo.creatorId?.firstName} {relatedVideo.creatorId?.lastName}
+                      </Typography>
+                      
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        {formatNumber(relatedVideo.stats?.viewsCount || 0)} views • {formatRelativeTime(relatedVideo.createdAt)}
+                      </Typography>
+                      
+                      {/* Show similarity indicator if this is a tag-based match */}
+                      {relatedVideo.similarity > 0 && (
+                        <Box sx={{ mt: 0.5 }}>
+                          {relatedVideo.tags?.filter(tag => video.tags?.includes(tag)).slice(0, 2).map((tag) => (
+                            <Chip
+                              key={tag}
+                              label={`#${tag}`}
+                              size="small"
+                              variant="outlined"
+                              sx={{ mr: 0.5, height: 16, fontSize: '0.6rem' }}
+                            />
+                          ))}
+                        </Box>
+                      )}
+                    </Box>
+                  </Paper>
+                ))
+              ) : (
+                // No related videos
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No related videos found
+                  </Typography>
+                </Box>
+              )}
             </Box>
           </Grid>
         </Grid>
@@ -569,10 +874,6 @@ const VideoDetail = () => {
             </MenuItem>
           )}
           
-          <MenuItem onClick={handleReport}>
-            <Flag sx={{ mr: 1 }} />
-            Report Video
-          </MenuItem>
         </Menu>
       </Container>
     </>
