@@ -10,11 +10,23 @@ import {
   Card,
   CardContent,
   Chip,
-  IconButton,
   Tab,
   Tabs,
   Skeleton,
   Divider,
+  CardMedia,
+  Paper,
+  IconButton,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import {
   Edit,
@@ -23,20 +35,32 @@ import {
   VideoLibrary,
   Favorite,
   Visibility,
+  CloudUpload,
+  MoreVert,
+  Delete,
+  Close,
 } from '@mui/icons-material';
 import VideoThumbnail from '../../components/Video/VideoThumbnail';
 import CreatorDashboard from '../../components/Creator/CreatorDashboard';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
 import { videoService } from '../../services/videos';
 import { userService } from '../../services/users';
 import { useAuth } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [editForm, setEditForm] = useState({ title: '', description: '', visibility: '' });
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [menuPosition, setMenuPosition] = useState({ mouseX: null, mouseY: null });
+  const queryClient = useQueryClient();
 
   // Fetch user's videos (including private ones for owner)
   const { data: videosData, isLoading: videosLoading } = useQuery(
@@ -61,7 +85,7 @@ const Profile = () => {
   );
 
   const videos = videosData?.data.videos || [];
-  const stats = statsData?.data?.data?.stats || user?.stats || {};
+  const stats = statsData?.data?.data?.stats || {};
 
   console.log('=== PROFILE.JS DEBUG FIXED ===');
   console.log('Raw statsData:', statsData);
@@ -72,6 +96,41 @@ const Profile = () => {
     totalLikes: stats.totalLikes,
     totalComments: stats.totalComments
   });
+
+  // Edit video mutation
+  const editVideoMutation = useMutation(
+    ({ videoId, videoData }) => videoService.updateVideo(videoId, videoData),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['videos', 'user', user?._id]);
+        queryClient.invalidateQueries(['userStats', user?._id]);
+        setEditDialogOpen(false);
+        setSelectedVideo(null);
+        setEditForm({ title: '', description: '', visibility: '' });
+        toast.success('Video updated successfully');
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.error || 'Failed to update video');
+      }
+    }
+  );
+
+  // Delete video mutation
+  const deleteVideoMutation = useMutation(
+    (videoId) => videoService.deleteVideo(videoId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['videos', 'user', user?._id]);
+        queryClient.invalidateQueries(['userStats', user?._id]);
+        setDeleteDialogOpen(false);
+        setSelectedVideo(null);
+        toast.success('Video deleted successfully');
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.error || 'Failed to delete video');
+      }
+    }
+  );
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -85,6 +144,55 @@ const Profile = () => {
       default: return true;
     }
   });
+
+  // Handler functions
+  const handleMenuOpen = (event, video) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    console.log('Menu open clicked, button position:', rect);
+    
+    setMenuPosition({
+      mouseX: rect.left,
+      mouseY: rect.bottom
+    });
+    setAnchorEl(null); // Clear anchorEl to use coordinates instead
+    setSelectedVideo(video);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuPosition({ mouseX: null, mouseY: null });
+    // Don't clear selectedVideo immediately to prevent null errors
+  };
+
+  const handleEditOpen = () => {
+    if (selectedVideo) {
+      setEditForm({
+        title: selectedVideo.title,
+        description: selectedVideo.description,
+        visibility: selectedVideo.visibility
+      });
+      setEditDialogOpen(true);
+      setAnchorEl(null); // Close menu but keep selectedVideo
+    }
+  };
+
+  const handleEditSave = () => {
+    editVideoMutation.mutate({
+      videoId: selectedVideo._id,
+      videoData: editForm
+    });
+  };
+
+  const handleDeleteOpen = () => {
+    setDeleteDialogOpen(true);
+    setAnchorEl(null); // Close menu but keep selectedVideo
+  };
+
+  const handleDeleteConfirm = () => {
+    if (selectedVideo && selectedVideo._id) {
+      deleteVideoMutation.mutate(selectedVideo._id);
+    }
+  };
 
   const VideoCard = ({ video }) => (
     <Card 
@@ -109,7 +217,7 @@ const Profile = () => {
           {video.title}
         </Typography>
         
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
           <Chip 
             label={video.visibility} 
             size="small" 
@@ -122,6 +230,26 @@ const Profile = () => {
             <Typography variant="caption">{video.stats?.likesCount || 0}</Typography>
             <Visibility color="action" fontSize="small" />
             <Typography variant="caption">{video.stats?.viewsCount || 0}</Typography>
+            
+            {/* Edit/Delete Menu Button */}
+            <IconButton 
+              size="small"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Button clicked, target:', e.currentTarget);
+                handleMenuOpen(e, video);
+              }}
+              ref={(el) => {
+                if (el && selectedVideo?._id === video._id) {
+                  console.log('Setting anchor element:', el);
+                }
+              }}
+              aria-controls={anchorEl ? 'video-menu' : undefined}
+              aria-haspopup="true"
+            >
+              <MoreVert fontSize="small" />
+            </IconButton>
           </Box>
         </Box>
         
@@ -361,6 +489,102 @@ const Profile = () => {
             )}
           </Box>
         )}
+
+        {/* Edit/Delete Menu */}
+        <Menu
+          anchorReference="anchorPosition"
+          anchorPosition={
+            menuPosition.mouseY !== null && menuPosition.mouseX !== null
+              ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
+              : undefined
+          }
+          open={menuPosition.mouseY !== null && menuPosition.mouseX !== null}
+          onClose={handleMenuClose}
+        >
+          <MenuItem onClick={handleEditOpen}>
+            <Edit fontSize="small" sx={{ mr: 1 }} />
+            Edit Video
+          </MenuItem>
+          <MenuItem onClick={handleDeleteOpen} sx={{ color: 'error.main' }}>
+            <Delete fontSize="small" sx={{ mr: 1 }} />
+            Delete Video
+          </MenuItem>
+        </Menu>
+
+        {/* Edit Video Dialog */}
+        <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            Edit Video
+            <IconButton
+              onClick={() => setEditDialogOpen(false)}
+              sx={{ position: 'absolute', right: 8, top: 8 }}
+            >
+              <Close />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            <TextField
+              fullWidth
+              label="Title"
+              value={editForm.title}
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Description"
+              value={editForm.description}
+              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              margin="normal"
+              multiline
+              rows={3}
+            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Visibility</InputLabel>
+              <Select
+                value={editForm.visibility}
+                label="Visibility"
+                onChange={(e) => setEditForm({ ...editForm, visibility: e.target.value })}
+              >
+                <MenuItem value="public">Public</MenuItem>
+                <MenuItem value="unlisted">Unlisted</MenuItem>
+                <MenuItem value="private">Private</MenuItem>
+              </Select>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleEditSave} 
+              variant="contained"
+              disabled={editVideoMutation.isLoading}
+            >
+              {editVideoMutation.isLoading ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+          <DialogTitle>Delete Video</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to delete "{selectedVideo?.title}"? This action cannot be undone.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleDeleteConfirm} 
+              variant="contained"
+              color="error"
+              disabled={deleteVideoMutation.isLoading}
+            >
+              {deleteVideoMutation.isLoading ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </>
   );
