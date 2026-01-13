@@ -1,0 +1,26 @@
+{
+  "routes": [
+    {
+      "route": "/favicon.ico",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000"
+      }
+    },
+    {
+      "route": "/manifest.json",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000"
+      }
+    }
+  ],
+  "mimeTypes": {
+    ".ico": "image/x-icon"
+  },
+  "globalHeaders": {
+    "Cache-Control": "public, max-age=3600"
+  },
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/favicon.ico", "/manifest.json", "/robots.txt", "/*.{css,js,woff,png,jpg,svg,gif,ico}"]
+  }
+}
