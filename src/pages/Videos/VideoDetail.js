@@ -137,28 +137,34 @@ const VideoDetail = () => {
     () => videoService.toggleLike(id),
     {
       onSuccess: (response) => {
-        console.log('Like API response:', response);
+        console.log('Full Like API response:', response);
+        console.log('Response type:', typeof response);
+        console.log('Response structure:', Object.keys(response || {}));
         
-        // Show immediate feedback based on response
-        const responseData = response?.data;
-        if (responseData?.success) {
-          const isLiked = responseData?.data?.isLiked ?? responseData?.isLiked;
-          console.log('Like status:', isLiked);
+        // The response should be the API response data directly
+        if (response?.success) {
+          const isLiked = response?.data?.isLiked;
+          console.log('Like status from response.data.isLiked:', isLiked);
           
           if (isLiked !== undefined) {
             toast.success(isLiked ? '❤️ Video liked!' : '💔 Video unliked!');
           } else {
             toast.success('👍 Like updated!');
           }
+          
+          // Invalidate and refetch to ensure UI updates
+          queryClient.invalidateQueries(['video', id]);
+          queryClient.invalidateQueries(['videos']);
+          queryClient.refetchQueries(['video', id]);
+        } else {
+          console.error('API response missing success field:', response);
+          toast.error('❌ Failed to update like - invalid response');
         }
-        
-        // Invalidate and refetch to ensure UI updates
-        queryClient.invalidateQueries(['video', id]);
-        queryClient.invalidateQueries(['videos']);
-        queryClient.refetchQueries(['video', id]);
       },
       onError: (error) => {
-        console.error('Like error:', error);
+        console.error('Like mutation error:', error);
+        console.error('Error response:', error?.response);
+        console.error('Error data:', error?.response?.data);
         toast.error('❌ Failed to update like');
       }
     }

@@ -83,11 +83,19 @@ class VideoService {
 
   // Like/unlike video
   async likeVideo(id) {
+    console.log('VideoService: Calling like API for video:', id);
     const response = await apiClient.post(`/videos/${id}/like`);
+    
+    console.log('VideoService: Raw API response:', response);
+    console.log('VideoService: Response status:', response.status);
+    console.log('VideoService: Response data:', response.data);
+    console.log('VideoService: response.data.data:', response.data.data);
+    console.log('VideoService: response.data.data.isLiked:', response.data.data?.isLiked);
     
     // Clear cache
     apiClient.clearCache(`video-${id}`);
     
+    console.log('VideoService: Returning response.data:', response.data);
     return response.data;
   }
 

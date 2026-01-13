@@ -5,23 +5,16 @@ import {
   Grid,
   Typography,
   Box,
-  TextField,
-  Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Card,
-  CardMedia,
   CardContent,
   Avatar,
   IconButton,
   Skeleton,
   Fab,
+  Button,
+  Chip,
 } from '@mui/material';
 import {
-  Search as SearchIcon,
-  FilterList,
   GridView,
   ViewList,
   FavoriteOutlined,
@@ -46,28 +39,18 @@ const Explore = () => {
   const [videos, setVideos] = useState([]);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({
-    search: searchParams.get('q') || '',
-    sortBy: searchParams.get('sortBy') || 'createdAt',
-    sortOrder: searchParams.get('sortOrder') || 'desc',
-    tags: searchParams.getAll('tags') || [],
-  });
   const [viewMode, setViewMode] = useState('grid');
 
-  // Get liked videos instead of all videos
+  // Get only liked videos (requires authentication)
   const { data: searchResults, isLoading, refetch } = useQuery(
-    ['liked-videos', filters, page],
+    ['liked-videos', page],
     async () => {
-      if (!isAuthenticated) {
-        // Show trending videos for non-authenticated users
-        return videoService.getTrendingVideos({ ...filters, page, limit: 20 });
-      }
-      // For authenticated users, get their liked videos
-      return videoService.getLikedVideos({ ...filters, page, limit: 20 });
+      // Only get liked videos for authenticated users, simplified without filters
+      return videoService.getLikedVideos({ page, limit: 20 });
     },
     {
       keepPreviousData: true,
-      enabled: true, // Always enabled, will switch based on auth status
+      enabled: isAuthenticated, // Only enabled when user is authenticated
     }
   );
 
@@ -82,44 +65,8 @@ const Explore = () => {
     }
   }, [searchResults, page]);
 
-  useEffect(() => {
-    // Reset pagination when filters change
-    setPage(1);
-    setVideos([]);
-    setHasMore(true);
-  }, [filters]);
-
   const loadMoreVideos = () => {
     setPage(prev => prev + 1);
-  };
-
-  const handleSearch = (searchValue) => {
-    const newFilters = { ...filters, search: searchValue };
-    setFilters(newFilters);
-    updateURL(newFilters);
-  };
-
-  const handleFilterChange = (key, value) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
-    updateURL(newFilters);
-  };
-
-  const handleTagFilter = (tag) => {
-    const newTags = filters.tags.includes(tag)
-      ? filters.tags.filter(t => t !== tag)
-      : [...filters.tags, tag];
-    handleFilterChange('tags', newTags);
-  };
-
-  const updateURL = (newFilters) => {
-    const params = new URLSearchParams();
-    if (newFilters.search) params.set('q', newFilters.search);
-    if (newFilters.sortBy !== 'createdAt') params.set('sortBy', newFilters.sortBy);
-    if (newFilters.sortOrder !== 'desc') params.set('sortOrder', newFilters.sortOrder);
-    if (newFilters.tags.length > 0) params.set('tags', newFilters.tags.join(','));
-    
-    setSearchParams(params);
   };
 
   const handleLike = async (videoId) => {
@@ -208,11 +155,7 @@ const Explore = () => {
                 label={`#${tag}`} 
                 size="small" 
                 variant="outlined"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleTagFilter(tag);
-                }}
-                color={filters.tags.includes(tag) ? 'primary' : 'default'}
+                color="default"
               />
             ))}
           </Box>
@@ -282,98 +225,29 @@ const Explore = () => {
         {/* Header */}
         <Box sx={{ py: 4 }}>
           <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
-            {isAuthenticated ? 'Your Liked Videos' : 'Trending Videos'}
+            Your Liked Videos
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            {isAuthenticated ? 'Videos you\'ve liked and saved' : 'Popular videos from our creative community'}
+            Videos you've liked and saved for later
           </Typography>
         </Box>
 
-        {/* Search and Filters */}
-        <Box sx={{ mb: 4 }}>
-          <Grid container spacing={3} alignItems="center">
-            {/* Search */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                placeholder="Search videos..."
-                value={filters.search}
-                onChange={(e) => handleSearch(e.target.value)}
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                }}
-              />
-            </Grid>
-
-            {/* Sort */}
-            <Grid item xs={6} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Sort By</InputLabel>
-                <Select
-                  value={filters.sortBy}
-                  label="Sort By"
-                  onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                >
-                  <MenuItem value="createdAt">Latest</MenuItem>
-                  <MenuItem value="likesCount">Most Liked</MenuItem>
-                  <MenuItem value="viewsCount">Most Viewed</MenuItem>
-                  <MenuItem value="title">Title</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Order */}
-            <Grid item xs={6} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Order</InputLabel>
-                <Select
-                  value={filters.sortOrder}
-                  label="Order"
-                  onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
-                >
-                  <MenuItem value="desc">Descending</MenuItem>
-                  <MenuItem value="asc">Ascending</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* View Mode */}
-            <Grid item xs={12} md={2}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <IconButton 
-                  onClick={() => setViewMode('grid')}
-                  color={viewMode === 'grid' ? 'primary' : 'default'}
-                >
-                  <GridView />
-                </IconButton>
-                <IconButton 
-                  onClick={() => setViewMode('list')}
-                  color={viewMode === 'list' ? 'primary' : 'default'}
-                >
-                  <ViewList />
-                </IconButton>
-              </Box>
-            </Grid>
-          </Grid>
-
-          {/* Active Tags */}
-          {filters.tags.length > 0 && (
-            <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Typography variant="body2" sx={{ alignSelf: 'center', mr: 1 }}>
-                Active filters:
-              </Typography>
-              {filters.tags.map((tag, index) => (
-                <Chip
-                  key={index}
-                  label={`#${tag}`}
-                  color="primary"
-                  variant="filled"
-                  size="small"
-                  onDelete={() => handleTagFilter(tag)}
-                />
-              ))}
-            </Box>
-          )}
+        {/* View Mode Only */}
+        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton 
+              onClick={() => setViewMode('grid')}
+              color={viewMode === 'grid' ? 'primary' : 'default'}
+            >
+              <GridView />
+            </IconButton>
+            <IconButton 
+              onClick={() => setViewMode('list')}
+              color={viewMode === 'list' ? 'primary' : 'default'}
+            >
+              <ViewList />
+            </IconButton>
+          </Box>
         </Box>
 
         {/* Videos */}
@@ -428,15 +302,31 @@ const Explore = () => {
         )}
 
         {/* Empty State */}
-        {!isLoading && videos.length === 0 && (
+        {!isAuthenticated ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
-            <SearchIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <Favorite sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h5" gutterBottom>
-              No videos found
+              Sign in to see your liked videos
             </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Try adjusting your search criteria or explore different tags
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              Like videos to save them here for easy access later
             </Typography>
+            <Button variant="contained" onClick={() => navigate('/login')}>
+              Sign In
+            </Button>
+          </Box>
+        ) : !isLoading && videos.length === 0 && (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Favorite sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h5" gutterBottom>
+              No liked videos yet
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              Start exploring and like videos to see them here
+            </Typography>
+            <Button variant="contained" onClick={() => navigate('/')}>
+              Explore Videos
+            </Button>
           </Box>
         )}
 
