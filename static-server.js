@@ -34,10 +34,19 @@ const server = http.createServer((req, res) => {
   }
   
   const filePath = path.join(__dirname, 'build', pathname);
+  const ext = path.parse(filePath).ext;
   
   fs.readFile(filePath, (err, data) => {
     if (err) {
-      // If file not found, serve index.html for SPA routing
+      // Only serve index.html for non-static asset requests (SPA routing)
+      // If it's a static asset request (.js, .css, .png, etc), return 404
+      if (ext && mimeTypes[ext] && ext !== '.html') {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('404 Not Found: ' + pathname);
+        return;
+      }
+      
+      // For routes like /video/123, /profile/edit - serve index.html for SPA routing
       fs.readFile(path.join(__dirname, 'build', 'index.html'), (err, data) => {
         if (err) {
           res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -50,7 +59,6 @@ const server = http.createServer((req, res) => {
       return;
     }
     
-    const ext = path.parse(filePath).ext;
     const contentType = mimeTypes[ext] || 'application/octet-stream';
     
     res.writeHead(200, { 'Content-Type': contentType });
