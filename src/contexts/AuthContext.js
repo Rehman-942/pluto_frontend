@@ -10,6 +10,16 @@ const initialState = {
   error: null,
 };
 
+// Debug function
+const debugState = (action, state) => {
+  console.log(`🔍 AUTH DEBUG [${action}]:`, {
+    user: state.user?.email || null,
+    isAuthenticated: state.isAuthenticated,
+    isLoading: state.isLoading,
+    hasTokenInStorage: !!localStorage.getItem('accessToken')
+  });
+};
+
 // Action types
 const AUTH_ACTIONS = {
   LOGIN_START: 'LOGIN_START',
@@ -27,74 +37,87 @@ const AUTH_ACTIONS = {
 
 // Reducer
 const authReducer = (state, action) => {
+  let newState;
+  
   switch (action.type) {
     case AUTH_ACTIONS.LOGIN_START:
     case AUTH_ACTIONS.REGISTER_START:
-      return {
+      newState = {
         ...state,
         isLoading: true,
         error: null,
       };
+      break;
 
     case AUTH_ACTIONS.LOGIN_SUCCESS:
     case AUTH_ACTIONS.REGISTER_SUCCESS:
-      return {
+      newState = {
         ...state,
         user: action.payload.user,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       };
+      break;
 
     case AUTH_ACTIONS.LOGIN_ERROR:
     case AUTH_ACTIONS.REGISTER_ERROR:
-      return {
+      newState = {
         ...state,
         user: null,
         isAuthenticated: false,
         isLoading: false,
         error: action.payload,
       };
+      break;
 
     case AUTH_ACTIONS.LOGOUT:
-      return {
+      newState = {
         ...state,
         user: null,
         isAuthenticated: false,
         isLoading: false,
         error: null,
       };
+      break;
 
     case AUTH_ACTIONS.LOAD_USER:
-      return {
+      newState = {
         ...state,
         user: action.payload,
         isAuthenticated: !!action.payload,
         isLoading: false,
         error: null,
       };
+      break;
 
     case AUTH_ACTIONS.SET_LOADING:
-      return {
+      newState = {
         ...state,
         isLoading: action.payload,
       };
+      break;
 
     case AUTH_ACTIONS.CLEAR_ERROR:
-      return {
+      newState = {
         ...state,
         error: null,
       };
+      break;
 
     case AUTH_ACTIONS.UPDATE_USER:
-      return {
+      newState = {
         ...state,
         user: action.payload,
       };
+      break;
 
     default:
-      return state;
+      newState = state;
   }
+  
+  debugState(action.type, newState);
+  return newState;
 };
 
 // Create context
@@ -111,46 +134,98 @@ export const AuthProvider = ({ children }) => {
 
   // Load user from localStorage and validate token
   const loadUser = async () => {
+    console.log('🚀 LOADUSER STARTED');
+    
+    const token = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    console.log('Tokens check:', {
+      hasAccessToken: !!token,
+      hasRefreshToken: !!refreshToken
+    });
+    
+    if (!token) {
+      console.log('LoadUser - No token, user not authenticated');
+      dispatch({ type: AUTH_ACTIONS.LOAD_USER, payload: null });
+      return;
+    }
+
+    // If we have a token, assume user is authenticated until proven otherwise
+    console.log('LoadUser - Token exists, assuming authenticated and verifying...');
+    
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
       
-      const token = localStorage.getItem('accessToken');
-      console.log('LoadUser - Token found:', !!token);
-      
-      if (!token) {
-        console.log('LoadUser - No token, setting loading false');
-        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
-        return;
-      }
-
       // Verify token with server
       console.log('LoadUser - Verifying token with server...');
       const response = await authService.getCurrentUser();
-      console.log('LoadUser - Server response:', response.data);
-      
-      dispatch({ 
-        type: AUTH_ACTIONS.LOAD_USER, 
-        payload: response.data.user 
+      console.log('LoadUser - Server verification successful');
+      console.log('LoadUser - Full response:', response);
+      console.log('LoadUser - Response data:', response.data);
+      console.log('LoadUser - Response structure check:', {
+        hasData: !!response.data,
+        hasUser: !!(response.data && response.data.user),
+        dataKeys: response.data ? Object.keys(response.data) : 'no data'
       });
-      console.log('LoadUser - User loaded successfully:', response.data.user?.email);
+      
+      // Try multiple possible response structures
+      let user = null;
+      if (response.data && response.data.user) {
+        user = response.data.user;
+        console.log('LoadUser - Found user in response.data.user');
+      } else if (response.data && response.data.data && response.data.data.user) {
+        user = response.data.data.user;
+        console.log('LoadUser - Found user in response.data.data.user');
+      } else if (response.data) {
+        user = response.data;
+        console.log('LoadUser - Using response.data directly as user');
+      }
+      
+      if (user && (user.email || user._id)) {
+        dispatch({ 
+          type: AUTH_ACTIONS.LOAD_USER, 
+          payload: user 
+        });
+        console.log('LoadUser - ✅ User verified:', user.email || user._id);
+      } else {
+        console.log('LoadUser - Invalid response structure, clearing auth');
+        console.log('LoadUser - Expected user object with email or _id, got:', user);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        dispatch({ type: AUTH_ACTIONS.LOAD_USER, payload: null });
+      }
     } catch (error) {
-      console.error('Load user error:', error);
-      console.error('Error details:', {
+      console.log('🚨 LOADUSER ERROR:', error.message);
+      console.log('Error details:', {
         status: error.response?.status,
-        data: error.response?.data,
+        code: error.code,
         message: error.message
       });
       
-      // Only clear tokens if it's actually an auth error (401)
-      if (error.response?.status === 401) {
-        console.log('LoadUser - 401 error, clearing tokens');
+      // Only clear authentication for actual auth errors (401/403)
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log('🔐 Token invalid/expired, clearing auth');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        dispatch({ type: AUTH_ACTIONS.LOAD_USER, payload: null });
+      } else {
+        console.log('🌐 Network/Server error - keeping auth state (tokens preserved)');
+        // For network errors: assume user is still authenticated
+        // Create a minimal user object to maintain auth state
+        const fallbackUser = { 
+          email: 'offline_user', 
+          _id: 'offline', 
+          firstName: 'User',
+          role: 'Creator'
+        };
+        dispatch({ 
+          type: AUTH_ACTIONS.LOAD_USER, 
+          payload: fallbackUser 
+        });
       }
-      
-      dispatch({ type: AUTH_ACTIONS.LOAD_USER, payload: null });
     } finally {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+      console.log('🏁 LOADUSER FINISHED');
     }
   };
 
