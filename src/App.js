@@ -11,9 +11,12 @@ import Navbar from './components/Layout/Navbar';
 import Footer from './components/Layout/Footer';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import ScrollToTop from './components/Common/ScrollToTop';
+import RoleBasedHome from './components/Layout/RoleBasedHome';
 
 // Pages
 import Home from './pages/Home';
+import CreatorHome from './pages/Creator/CreatorHome';
+import LikedVideos from './pages/LikedVideos';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import Profile from './pages/Profile/Profile';
@@ -149,14 +152,26 @@ function App() {
                 
                 <Box component="main" sx={{ flexGrow: 1, pb: 4 }}>
                   <Routes>
+                    {/* Role-based Home Route */}
+                    <Route path="/" element={<RoleBasedHome />} />
+                    
                     {/* Public Routes */}
-                    <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/explore" element={<Explore />} />
                     <Route path="/search" element={<Search />} />
                     <Route path="/video/:id" element={<VideoDetail />} />
                     <Route path="/user/:username" element={<UserProfile />} />
+                    
+                    {/* Liked Videos Route for Customers */}
+                    <Route 
+                      path="/liked" 
+                      element={
+                        <ProtectedRoute>
+                          <LikedVideos />
+                        </ProtectedRoute>
+                      } 
+                    />
                     
                     {/* Protected Routes */}
                     <Route 

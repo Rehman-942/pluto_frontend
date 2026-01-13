@@ -175,39 +175,81 @@ const Navbar = () => {
           Pluto
         </Typography>
 
-        {/* Navigation Links */}
+        {/* Navigation Links - Role-based */}
         <Box sx={{ display: { xs: 'none', md: 'flex' }, mr: 2 }}>
-          <Button
-            color="inherit"
-            component={Link}
-            to="/"
-            startIcon={<Home />}
-            sx={{
-              mx: 1,
-              fontWeight: isActive('/') ? 600 : 400,
-              borderBottom: isActive('/') ? 2 : 0,
-              borderBottomColor: 'white',
-              borderRadius: 0,
-            }}
-          >
-            Home
-          </Button>
-          
-          <Button
-            color="inherit"
-            component={Link}
-            to="/explore"
-            startIcon={<Favorite />}
-            sx={{
-              mx: 1,
-              fontWeight: isActive('/explore') ? 600 : 400,
-              borderBottom: isActive('/explore') ? 2 : 0,
-              borderBottomColor: 'white',
-              borderRadius: 0,
-            }}
-          >
-            Liked Videos
-          </Button>
+          {isAuthenticated && user?.role === 'Creator' ? (
+            <>
+              {/* Creator Navigation */}
+              <Button
+                color="inherit"
+                component={Link}
+                to="/"
+                startIcon={<Home />}
+                sx={{
+                  mx: 1,
+                  fontWeight: isActive('/') ? 600 : 400,
+                  borderBottom: isActive('/') ? 2 : 0,
+                  borderBottomColor: 'white',
+                  borderRadius: 0,
+                }}
+              >
+                Dashboard
+              </Button>
+              
+              <Button
+                color="inherit"
+                component={Link}
+                to="/profile"
+                startIcon={<Person />}
+                sx={{
+                  mx: 1,
+                  fontWeight: isActive('/profile') ? 600 : 400,
+                  borderBottom: isActive('/profile') ? 2 : 0,
+                  borderBottomColor: 'white',
+                  borderRadius: 0,
+                }}
+              >
+                Profile
+              </Button>
+            </>
+          ) : (
+            <>
+              {/* Customer/Guest Navigation */}
+              <Button
+                color="inherit"
+                component={Link}
+                to="/"
+                startIcon={<Home />}
+                sx={{
+                  mx: 1,
+                  fontWeight: isActive('/') ? 600 : 400,
+                  borderBottom: isActive('/') ? 2 : 0,
+                  borderBottomColor: 'white',
+                  borderRadius: 0,
+                }}
+              >
+                Home
+              </Button>
+              
+              {isAuthenticated && (
+                <Button
+                  color="inherit"
+                  component={Link}
+                  to="/liked"
+                  startIcon={<Favorite />}
+                  sx={{
+                    mx: 1,
+                    fontWeight: isActive('/liked') ? 600 : 400,
+                    borderBottom: isActive('/liked') ? 2 : 0,
+                    borderBottomColor: 'white',
+                    borderRadius: 0,
+                  }}
+                >
+                  Liked Videos
+                </Button>
+              )}
+            </>
+          )}
         </Box>
         <Box sx={{ flexGrow: 1 }} />
 
