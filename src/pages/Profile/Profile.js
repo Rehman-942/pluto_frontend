@@ -9,7 +9,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardMedia,
   Chip,
   IconButton,
   Tab,
@@ -26,6 +25,7 @@ import {
   Visibility,
 } from '@mui/icons-material';
 import VideoThumbnail from '../../components/Video/VideoThumbnail';
+import CreatorDashboard from '../../components/Creator/CreatorDashboard';
 import { useQuery } from 'react-query';
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
@@ -38,10 +38,14 @@ const Profile = () => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
 
-  // Fetch user's videos
+  // Fetch user's videos (including private ones for owner)
   const { data: videosData, isLoading: videosLoading } = useQuery(
     ['videos', 'user', user?._id],
-    () => videoService.getUserVideos(user?._id, { limit: 50, visibility: 'all' }),
+    () => videoService.getUserVideos(user?._id, { 
+      limit: 100, 
+      visibility: 'all', // Gets both public and private for owner
+      includePrivate: true 
+    }),
     {
       enabled: !!user?._id,
     }
@@ -150,6 +154,11 @@ const Profile = () => {
       </Helmet>
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Creator Dashboard - Only for Creators */}
+        {user?.role === 'Creator' && (
+          <CreatorDashboard stats={stats} videos={videos} />
+        )}
+
         {/* Profile Header */}
         <Card sx={{ mb: 4 }}>
           <CardContent sx={{ p: 4 }}>
@@ -222,7 +231,7 @@ const Profile = () => {
                 )}
 
                 <Typography variant="caption" color="text.secondary">
-                  Member since {format(new Date(user.createdAt), 'MMMM yyyy')}
+                  Member since {user.createdAt ? format(new Date(user.createdAt), 'MMMM yyyy') : 'Recently'}
                 </Typography>
               </Grid>
             </Grid>

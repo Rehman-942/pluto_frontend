@@ -79,7 +79,7 @@ const VideoUpload = () => {
       if (!selectedFile) {
         throw new Error('Video file is required');
       }
-      if (!uploadData.title?.trim()) {
+      if (!uploadData.videoData?.title?.trim()) {
         throw new Error('Video title is required');
       }
       

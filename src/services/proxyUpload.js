@@ -33,7 +33,18 @@ export const proxyUploadService = {
       formData.append('thumbnail', uploadData.thumbnailFile);
     }
     
-    formData.append('title', uploadData.videoData.title || 'Untitled Video');
+    // Debug logging
+    console.log('=== TITLE DEBUG ===');
+    console.log('Original title:', uploadData.videoData.title);
+    console.log('Title type:', typeof uploadData.videoData.title);
+    console.log('Title length:', uploadData.videoData.title?.length);
+    console.log('Title trimmed:', uploadData.videoData.title?.trim());
+    console.log('Title after trim length:', uploadData.videoData.title?.trim()?.length);
+    
+    const finalTitle = uploadData.videoData.title?.trim() || 'Untitled Video';
+    console.log('Final title to send:', finalTitle);
+    
+    formData.append('title', finalTitle);
     formData.append('description', uploadData.videoData.description || '');
     formData.append('visibility', uploadData.videoData.visibility || 'public');
     formData.append('tags', JSON.stringify(uploadData.videoData.tags || []));
